@@ -1,0 +1,8 @@
+github.com/gowebapi/webapi v0.0.0-20220111190827-0cb1f8ede1ac h1:PGGQsXJIQwOROGFp1WaeKBt1le3x6yDzcpVjArnZIVk=
+github.com/gowebapi/webapi v0.0.0-20220111190827-0cb1f8ede1ac/go.mod h1:idYMKBl+9tqA6sZrzVqN+3XGWANtIRP6CLZsxZOiIFg=
+github.com/sunraylab/datarange v1.0.0 h1:xBHG8jiULj0edT5jsA0EErVYJGfR2Mm00GU4GMobmKc=
+github.com/sunraylab/datarange v1.0.0/go.mod h1:aol7ppxrCU9RWrx/vnA3VXGBHDAnAvWY+osq7xKOu8g=
+github.com/sunraylab/rgb v1.0.0 h1:fV3j7ylks2r7O5q5r6uibrszq5KgAMVmLyHX5byjstw=
+github.com/sunraylab/rgb v1.0.0/go.mod h1:0Awid1vbN/lKw+ItGnH6DfI7YstFuTWP6RivLWqZPB0=
+github.com/sunraylab/timeline v1.2.1 h1:u6PiciRxkqCWhNi2oHQm3mMBNIoEpskmNEIJaN9EWxo=
+github.com/sunraylab/timeline v1.2.1/go.mod h1:tVPdWv6BwJRhkL/Wy+rBBfLkTzK4tuxRts7CrFiBRL0=
