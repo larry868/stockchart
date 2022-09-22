@@ -2,7 +2,6 @@ package stockchart
 
 import (
 	"fmt"
-	"log"
 	"math"
 )
 
@@ -164,9 +163,6 @@ func (thisRect Rect) And(anotherRect Rect) (AndRect *Rect) {
 		return nil
 	}
 	AndRect = &Rect{O: Point{X: xo, Y: yo}, Width: xe - xo, Height: ye - yo}
-	if !anotherRect.Equal(AndRect) {
-		log.Printf("thisRect:%s, another:%s And=%s\n", thisRect, anotherRect, AndRect) // DEBUG:
-	}
 	return AndRect
 }
 

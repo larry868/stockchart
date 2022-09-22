@@ -148,19 +148,19 @@ func (drawing *DrawingTimeSelector) OnMouseMove(layer *drawingLayer, xy Point, e
 	// change the selector
 	if drawing.dragFrom {
 		rate := layer.ClipArea.XRate(xy.X)
-		fromtime := drawing.xAxisRange.WhatTime(rate)
+		postime := drawing.xAxisRange.WhatTime(rate)
 		// HACK: cap flag not working!
-		if fromtime.Before(drawing.timeSelection.To) {
-			drawing.timeSelection.MoveFrom(fromtime, true)
+		if postime.Before(drawing.timeSelection.To) {
+			drawing.timeSelection.MoveFrom(postime, true)
 			layer.Redraw()
 		}
 
 	} else if drawing.dragTo {
 		rate := layer.ClipArea.XRate(xy.X)
-		totime := drawing.xAxisRange.WhatTime(rate)
+		postime := drawing.xAxisRange.WhatTime(rate)
 		// HACK: cap flag not working!
-		if totime.After(drawing.timeSelection.From) {
-			drawing.timeSelection.MoveTo(totime, true)
+		if postime.After(drawing.timeSelection.From) {
+			drawing.timeSelection.MoveTo(postime, true)
 			layer.Redraw()
 		}
 	}

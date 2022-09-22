@@ -16,7 +16,7 @@ func BuildRandomDataset() *stockchart.DataList {
 	last := time.Date(2022, 7, 1, 0, 0, 0, 0, time.UTC)
 	open := 10000.0
 
-	for i := 0; i < 3000; i++ {
+	for i := 0; i < 150; i++ {
 		// add a data point
 		p := new(stockchart.DataPoint)
 
