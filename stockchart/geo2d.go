@@ -170,6 +170,16 @@ func (thisRect Rect) And(anotherRect Rect) (AndRect *Rect) {
 	return AndRect
 }
 
+// Box r within the area. That means r is inside the area, if required recalculate its position.
+func (r *Rect) Box(area Rect) {
+	if r.O.X < area.O.X {
+		r.O.X = area.O.X
+	}
+	if r.End().X > area.End().X {
+		r.O.X = area.End().X - r.Width
+	}
+}
+
 // BoundX returns X bounded by the rect boundaries
 func (r Rect) BoundX(x int) int {
 	if x < r.O.X {
