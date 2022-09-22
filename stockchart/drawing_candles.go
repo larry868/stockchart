@@ -61,12 +61,12 @@ func (drawing DrawingCandles) OnRedraw(layer *drawingLayer) {
 	item := drawing.series.Head
 	for item != nil {
 		// skip items out of range
-		if item.TimeStamp.Before(drawing.xAxisRange.From) {
+		if item.TimeStamp.Add(item.Duration).Before(drawing.xAxisRange.From) {
 			// scan next item
 			item = item.Next
 			continue
 		}
-		if item.TimeStamp.Add(item.Duration).After(drawing.xAxisRange.To) {
+		if item.TimeStamp.After(drawing.xAxisRange.To) {
 			break
 		}
 
