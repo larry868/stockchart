@@ -90,6 +90,17 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 		})
 	}
 
+	if (hme & evt_MouseEnter) != 0 {
+		layer.canvasE.SetOnMouseEnter(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
+			xy := getMousePos(event)
+			for _, drawing := range layer.drawings {
+				if drawing.OnMouseEnter != nil {
+					drawing.OnMouseEnter(layer, xy, event)
+				}
+			}
+		})
+	}
+
 	if (hme & evt_MouseLeave) != 0 {
 		layer.canvasE.SetOnMouseLeave(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMousePos(event)
@@ -195,8 +206,9 @@ const (
 	evt_MouseUp    evtHandler = 0b00000001
 	evt_MouseDown  evtHandler = 0b00000010
 	evt_MouseMove  evtHandler = 0b00000100
-	evt_MouseLeave evtHandler = 0b00001000
-	evt_Wheel      evtHandler = 0b00010000
+	evt_MouseEnter evtHandler = 0b00001000
+	evt_MouseLeave evtHandler = 0b00010000
+	evt_Wheel      evtHandler = 0b00100000
 )
 
 func (layer *drawingLayer) HandledMouseEvents() evtHandler {
@@ -210,6 +222,9 @@ func (layer *drawingLayer) HandledMouseEvents() evtHandler {
 		}
 		if drawing.OnMouseMove != nil {
 			e |= evt_MouseMove
+		}
+		if drawing.OnMouseEnter != nil {
+			e |= evt_MouseEnter
 		}
 		if drawing.OnMouseLeave != nil {
 			e |= evt_MouseLeave

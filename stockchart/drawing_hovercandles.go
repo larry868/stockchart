@@ -27,6 +27,7 @@ func NewDrawingHoverCandles(series *DataList, xrange *timeslice.TimeSlice) *Draw
 		drawing.OnMouseMove(layer, xy, event)
 	}
 	drawing.Drawing.OnMouseLeave = func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) {
+		drawing.hoverData = nil
 		layer.Clear()
 	}
 	return drawing
