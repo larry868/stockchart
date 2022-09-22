@@ -20,6 +20,7 @@ type Drawing struct {
 	OnMouseDown           func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent)
 	OnMouseUp             func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) (timesel *timeslice.TimeSlice)
 	OnMouseMove           func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent)
+	OnMouseLeave          func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent)
 	OnChangeTimeSelection func(layer *drawingLayer, timesel timeslice.TimeSlice)
 	OnWheel               func(layer *drawingLayer, event *htmlevent.WheelEvent) (timesel *timeslice.TimeSlice)
 }

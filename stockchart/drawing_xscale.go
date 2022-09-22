@@ -21,7 +21,7 @@ func NewDrawingXGrid(series *DataList, xrange *timeslice.TimeSlice, fFullGrid bo
 	drawing.fFullGrid = fFullGrid
 	drawing.series = series
 	drawing.xAxisRange = xrange
-	drawing.MainColor = *bootstrapcolor.Gray.Lighten(0.3)
+	drawing.MainColor = bootstrapcolor.Gray
 	drawing.Drawing.OnRedraw = func(layer *drawingLayer) {
 		drawing.OnRedraw(layer)
 	}
@@ -39,21 +39,33 @@ func (drawing DrawingXScale) OnRedraw(layer *drawingLayer) {
 	}
 
 	// setup default text drawing properties
-	layer.ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
-	layer.ctx2D.SetTextBaseline(canvas.BottomCanvasTextBaseline)
-	layer.ctx2D.SetFont(`10px 'Roboto', sans-serif`)
+	layer.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
+	layer.Ctx2D.SetTextBaseline(canvas.BottomCanvasTextBaseline)
+	layer.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
 
 	// define the grid scale
 	const minxstepwidth = 100.0
-	maxscans := float64(layer.clipArea.Width) / minxstepwidth
+	maxscans := float64(layer.ClipArea.Width) / minxstepwidth
 	maskmain := drawing.xAxisRange.GetScanMask(uint(maxscans))
 	//fmt.Printf("layer %q, drawing %q, maskmain=%v\n", layer.layerId, drawing.Name, maskmain) // DEBUG:
+
+	// set fillstyle for the grid lines
+	gMainColor := drawing.MainColor.Alpha(0.4)
+	gSecondColor := drawing.MainColor.Lighten(0.5).Alpha(0.4)
+	gLabelColor := drawing.MainColor.Darken(0.5)
+	if !drawing.fFullGrid {
+		gMainColor = gSecondColor
+	}
 
 	// draw the second grid, before the main grid because it can overlay
 	if maskmain > timeslice.MASK_SHORTEST {
 
-		// set fillstyle for the grid lines
-		layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Lighten(0.5).Hexa())})
+		layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gSecondColor.Hexa())})
+
+		fh := -float64(layer.ClipArea.Height)
+		if !drawing.fFullGrid {
+			fh = -10.0
+		}
 
 		// scan the full xAxisRange every sub-level mask step
 		var xtime time.Time
@@ -61,14 +73,10 @@ func (drawing DrawingXScale) OnRedraw(layer *drawingLayer) {
 
 			// calculate xpos. if the timeslice is a single date then draw a single bar at the middle
 			xtimerate := drawing.xAxisRange.Progress(xtime)
-			xpos := layer.clipArea.O.X + int(float64(layer.clipArea.Width)*xtimerate)
+			xpos := layer.ClipArea.O.X + int(float64(layer.ClipArea.Width)*xtimerate)
 
-			// draw the second grid line
-			fh := layer.clipArea.Height
-			if !drawing.fFullGrid {
-				fh = 10
-			}
-			layer.ctx2D.FillRect(float64(xpos), float64(layer.clipArea.O.Y+layer.clipArea.Height), 1.0, -float64(fh))
+			// draw the grid
+			layer.Ctx2D.FillRect(float64(xpos), float64(layer.ClipArea.O.Y+layer.ClipArea.Height), 1.0, fh)
 		}
 	}
 
@@ -79,24 +87,20 @@ func (drawing DrawingXScale) OnRedraw(layer *drawingLayer) {
 
 		// calculate xpos. if the timeslice is a single date then draw a single bar at the middle
 		xtimerate := drawing.xAxisRange.Progress(xtime)
-		xpos := layer.clipArea.O.X + int(float64(layer.clipArea.Width)*xtimerate)
+		xpos := layer.ClipArea.O.X + int(float64(layer.ClipArea.Width)*xtimerate)
 
 		// draw the main grid line
-		layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Alpha(50).Hexa())})
-		fh := layer.clipArea.Height
-		if !drawing.fFullGrid {
-			fh = 15
-		}
-		layer.ctx2D.FillRect(float64(xpos), float64(layer.clipArea.O.Y+layer.clipArea.Height), 1.0, -float64(fh))
+		layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gMainColor.Hexa())})
+		layer.Ctx2D.FillRect(float64(xpos), float64(layer.ClipArea.O.Y+layer.ClipArea.Height), 1.0, -float64(layer.ClipArea.Height))
 		//fmt.Printf("xaxis xpos:%v\n", xpos) // DEBUG:
 
 		// draw time label if not overlapping last label
 		if (xpos + 2) > lastlabelend {
 			strdtefmt := maskmain.GetTimeFormat(xtime, lastxtime)
 			label := xtime.Format(strdtefmt)
-			layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Darken(0.5).Hexa())})
-			layer.ctx2D.FillText(label, float64(xpos+2), float64(layer.clipArea.End().Y)-1, nil)
-			lastlabelend = xpos + 2 + int(layer.ctx2D.MeasureText(label).Width())
+			layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gLabelColor.Hexa())})
+			layer.Ctx2D.FillText(label, float64(xpos+2), float64(layer.ClipArea.End().Y)-1, nil)
+			lastlabelend = xpos + 2 + int(layer.Ctx2D.MeasureText(label).Width())
 		}
 
 		// scan next

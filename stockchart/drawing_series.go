@@ -38,17 +38,17 @@ func (drawing DrawingSeries) OnRedraw(layer *drawingLayer) {
 	}
 
 	// setup drawing tools
-	layer.ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
+	layer.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
 	if drawing.fFillArea {
-		layer.ctx2D.SetLineWidth(3)
+		layer.Ctx2D.SetLineWidth(3)
 	} else {
-		layer.ctx2D.SetLineWidth(2)
+		layer.Ctx2D.SetLineWidth(2)
 	}
-	layer.ctx2D.SetLineJoin(canvas.RoundCanvasLineJoin)
-	layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Lighten(0.8).Hexa())})
+	layer.Ctx2D.SetLineJoin(canvas.RoundCanvasLineJoin)
+	layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Lighten(0.8).Hexa())})
 
 	// reduce the cliping area
-	drawArea := layer.clipArea.Shrink(0, 5)
+	drawArea := layer.ClipArea.Shrink(0, 5)
 	//fmt.Printf("clip:%s draw:%s\n", layer.clipArea, drawArea) // DEBUG:
 
 	// get xfactor & yfactor according to time selection
@@ -77,16 +77,16 @@ func (drawing DrawingSeries) OnRedraw(layer *drawingLayer) {
 			first = false
 			xopen := drawArea.O.X + int(xfactor*item.TimeStamp.Sub(drawing.xAxisRange.From).Seconds())
 			yopen := drawArea.O.Y + drawArea.Height - int(yfactor*(item.Open-lowboundary))
-			layer.ctx2D.MoveTo(float64(xopen), float64(yopen))
-			layer.ctx2D.BeginPath()
-			layer.ctx2D.LineTo(float64(xopen), float64(yopen))
+			layer.Ctx2D.MoveTo(float64(xopen), float64(yopen))
+			layer.Ctx2D.BeginPath()
+			layer.Ctx2D.LineTo(float64(xopen), float64(yopen))
 			x0 = xopen
 			// fmt.Printf("xopen=%d yopen=%d\n", xopen, yopen) // DEBUG:
 		}
 
 		xclose = drawArea.O.X + int(xfactor*item.TimeStamp.Add(item.Duration).Sub(drawing.xAxisRange.From).Seconds())
 		yclose := drawArea.O.Y + drawArea.Height - int(yfactor*(item.Close-lowboundary))
-		layer.ctx2D.LineTo(float64(xclose), float64(yclose))
+		layer.Ctx2D.LineTo(float64(xclose), float64(yclose))
 		//fmt.Printf("xclose=%d yclose=%d\n", xclose, yclose)  // DEBUG:
 
 		// scan next item
@@ -94,15 +94,15 @@ func (drawing DrawingSeries) OnRedraw(layer *drawingLayer) {
 	}
 
 	// draw the top line
-	layer.ctx2D.Stroke()
+	layer.Ctx2D.Stroke()
 
 	// then draw the area
 	if drawing.fFillArea {
-		layer.ctx2D.LineTo(float64(xclose), float64(layer.clipArea.End().Y))
-		layer.ctx2D.LineTo(float64(x0), float64(layer.clipArea.End().Y))
-		layer.ctx2D.ClosePath()
+		layer.Ctx2D.LineTo(float64(xclose), float64(layer.ClipArea.End().Y))
+		layer.Ctx2D.LineTo(float64(x0), float64(layer.ClipArea.End().Y))
+		layer.Ctx2D.ClosePath()
 		fillrule := canvas.NonzeroCanvasFillRule
-		layer.ctx2D.Fill(&fillrule)
+		layer.Ctx2D.Fill(&fillrule)
 	}
 }
 

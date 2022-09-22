@@ -10,6 +10,7 @@ import (
 	"github.com/gowebapi/webapi/html"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/gowebapi/webapi/html/htmlevent"
+	"github.com/sunraylab/rgb"
 	"github.com/sunraylab/timeline/timeslice"
 )
 
@@ -25,17 +26,18 @@ const (
 // A drawingLayer correspond to a single canvas with an html5 2D drawing context
 // embedding one or many drawings
 type drawingLayer struct {
-	layerId  string
+	Name     string
+	ClipArea Rect
+	BgColor  rgb.Color
+	Ctx2D    *canvas.CanvasRenderingContext2D
+
 	canvasE  *canvas.HTMLCanvasElement
 	layout   layerArea
-	ctx2D    *canvas.CanvasRenderingContext2D
-	clipArea Rect
-
 	drawings []*Drawing //TimeSeriesDrawer
 }
 
 func (layer drawingLayer) String() string {
-	str := fmt.Sprintf("%q canvasE:%p, ctx2D:%p area:{%v} nb drawings:%d", layer.layerId, layer.canvasE, layer.ctx2D, layer.clipArea, len(layer.drawings))
+	str := fmt.Sprintf("%q canvasE:%p, ctx2D:%p area:{%v} nb drawings:%d", layer.Name, layer.canvasE, layer.Ctx2D, layer.ClipArea, len(layer.drawings))
 	return str
 }
 
@@ -44,11 +46,11 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 	// Define functions to capture mouse events on this layer,
 	// only if the layer contains at least one mouse function on its drawings
 	hme := layer.HandledMouseEvents()
-	fmt.Printf("layer %q, mouse event handled=%08b\n", layer.layerId, hme) // DEBUG:
+	fmt.Printf("layer %q, mouse event handled=%08b\n", layer.Name, hme) // DEBUG:
 	if (hme & evt_MouseDown) != 0 {
 		layer.canvasE.SetOnMouseDown(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMousePos(event)
-			if xy.IsIn(layer.clipArea) {
+			if xy.IsIn(layer.ClipArea) {
 				for _, drawing := range layer.drawings {
 					if drawing.OnMouseDown != nil {
 						drawing.OnMouseDown(layer, xy, event)
@@ -78,12 +80,22 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 	}
 
 	if (hme & evt_MouseMove) != 0 {
-
 		layer.canvasE.SetOnMouseMove(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMousePos(event)
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseMove != nil {
 					drawing.OnMouseMove(layer, xy, event)
+				}
+			}
+		})
+	}
+
+	if (hme & evt_MouseLeave) != 0 {
+		layer.canvasE.SetOnMouseLeave(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
+			xy := getMousePos(event)
+			for _, drawing := range layer.drawings {
+				if drawing.OnMouseLeave != nil {
+					drawing.OnMouseLeave(layer, xy, event)
 				}
 			}
 		})
@@ -138,10 +150,10 @@ func (layer *drawingLayer) Resize(area Rect) {
 	layer.canvasE.SetHeight(uint(dbuffheight))
 
 	// update the cliparea
-	layer.clipArea.O.X = 0
-	layer.clipArea.O.X = 0
-	layer.clipArea.Width = dbuffwidth
-	layer.clipArea.Height = dbuffheight
+	layer.ClipArea.O.X = 0
+	layer.ClipArea.O.X = 0
+	layer.ClipArea.Width = dbuffwidth
+	layer.ClipArea.Height = dbuffheight
 
 	// fmt.Printf("Resizing layer %v ", player.String()) //DEBUG:
 	// fmt.Printf("dpr=%f drawbuffw=%v, drawbuffh=%v\n", dpr, dbuffwidth, dbuffheight) //DEBUG:
@@ -150,7 +162,7 @@ func (layer *drawingLayer) Resize(area Rect) {
 
 // Clear the layer
 func (layer *drawingLayer) Clear() {
-	layer.ctx2D.ClearRect(float64(layer.clipArea.O.X), float64(layer.clipArea.O.Y), float64(layer.clipArea.Width), float64(layer.clipArea.Height))
+	layer.Ctx2D.ClearRect(float64(layer.ClipArea.O.X), float64(layer.ClipArea.O.Y), float64(layer.ClipArea.Width), float64(layer.ClipArea.Height))
 }
 
 // Clear the layer and Redraw all drawings
@@ -180,10 +192,11 @@ func (layer *drawingLayer) ChangeTimeSelection(timesel timeslice.TimeSlice) {
 type evtHandler int
 
 const (
-	evt_MouseUp   evtHandler = 0b00000001
-	evt_MouseDown evtHandler = 0b00000010
-	evt_MouseMove evtHandler = 0b00000100
-	evt_Wheel     evtHandler = 0b00001000
+	evt_MouseUp    evtHandler = 0b00000001
+	evt_MouseDown  evtHandler = 0b00000010
+	evt_MouseMove  evtHandler = 0b00000100
+	evt_MouseLeave evtHandler = 0b00001000
+	evt_Wheel      evtHandler = 0b00010000
 )
 
 func (layer *drawingLayer) HandledMouseEvents() evtHandler {
@@ -197,6 +210,9 @@ func (layer *drawingLayer) HandledMouseEvents() evtHandler {
 		}
 		if drawing.OnMouseMove != nil {
 			e |= evt_MouseMove
+		}
+		if drawing.OnMouseLeave != nil {
+			e |= evt_MouseLeave
 		}
 		if drawing.OnWheel != nil {
 			e |= evt_Wheel

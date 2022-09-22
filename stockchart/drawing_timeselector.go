@@ -61,32 +61,32 @@ func (drawing *DrawingTimeSelector) OnRedraw(layer *drawingLayer) {
 		return
 	}
 	// get the y center for redrawing the buttons
-	ycenter := float64(layer.clipArea.O.Y) + float64(layer.clipArea.Height)/2.0
+	ycenter := float64(layer.ClipArea.O.Y) + float64(layer.ClipArea.Height)/2.0
 
 	// draw the left selector
 	xleftrate := drawing.xAxisRange.Progress(drawing.timeSelection.From)
-	xposleft := float64(layer.clipArea.O.X) + float64(layer.clipArea.Width)*xleftrate
-	layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Alpha(0.4).Hexa())})
-	layer.ctx2D.FillRect(float64(layer.clipArea.O.X), float64(layer.clipArea.O.Y), xposleft, float64(layer.clipArea.Height))
+	xposleft := float64(layer.ClipArea.O.X) + float64(layer.ClipArea.Width)*xleftrate
+	layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Alpha(0.4).Hexa())})
+	layer.Ctx2D.FillRect(float64(layer.ClipArea.O.X), float64(layer.ClipArea.O.Y), xposleft, float64(layer.ClipArea.Height))
 	moveButton(layer, &drawing.fromButton, xposleft, ycenter)
 
 	// draw the right selector
 	xrightrate := drawing.xAxisRange.Progress(drawing.timeSelection.To)
-	xposright := float64(layer.clipArea.O.X) + float64(layer.clipArea.Width)*xrightrate
-	layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Alpha(0.4).Hexa())})
-	layer.ctx2D.FillRect(xposright, float64(layer.clipArea.O.Y), float64(layer.clipArea.Width)-xposright, float64(layer.clipArea.Height))
+	xposright := float64(layer.ClipArea.O.X) + float64(layer.ClipArea.Width)*xrightrate
+	layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Alpha(0.4).Hexa())})
+	layer.Ctx2D.FillRect(xposright, float64(layer.ClipArea.O.Y), float64(layer.ClipArea.Width)-xposright, float64(layer.ClipArea.Height))
 	moveButton(layer, &drawing.toButton, xposright, ycenter)
 }
 
 // moveButton utility
 func moveButton(layer *drawingLayer, button *Rect, xcenter float64, ycenter float64) {
-	layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Hexa())})
-	layer.ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Hexa())})
-	layer.ctx2D.SetLineWidth(1)
+	layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Hexa())})
+	layer.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Hexa())})
+	layer.Ctx2D.SetLineWidth(1)
 	x0 := xcenter - float64(button.Width)/2
 	y0 := ycenter - float64(button.Height)/2
-	layer.ctx2D.FillRect(x0, y0, float64(button.Width), float64(button.Height))
-	layer.ctx2D.StrokeRect(x0, y0, float64(button.Width), float64(button.Height))
+	layer.Ctx2D.FillRect(x0, y0, float64(button.Width), float64(button.Height))
+	layer.Ctx2D.StrokeRect(x0, y0, float64(button.Width), float64(button.Height))
 	button.O.X = int(x0)
 	button.O.Y = int(y0)
 }
@@ -135,19 +135,19 @@ func (drawing *DrawingTimeSelector) OnMouseMove(layer *drawingLayer, xy Point, e
 
 	// change cursor if we start overing a button
 	if (xy.IsIn(drawing.fromButton) || xy.IsIn(drawing.toButton)) && !drawing.resizeCursor {
-		layer.ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`col-resize`)})
+		layer.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`col-resize`)})
 		drawing.resizeCursor = true
 	}
 
 	// change cursor if we leave a button
 	if (!xy.IsIn(drawing.fromButton) && !xy.IsIn(drawing.toButton)) && drawing.resizeCursor {
-		layer.ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`auto`)})
+		layer.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`auto`)})
 		drawing.resizeCursor = false
 	}
 
 	// change the selector
 	if drawing.dragFrom {
-		rate := layer.clipArea.XRate(xy.X)
+		rate := layer.ClipArea.XRate(xy.X)
 		fromtime := drawing.xAxisRange.WhatTime(rate)
 		// HACK: cap flag not working!
 		if fromtime.Before(drawing.timeSelection.To) {
@@ -156,7 +156,7 @@ func (drawing *DrawingTimeSelector) OnMouseMove(layer *drawingLayer, xy Point, e
 		}
 
 	} else if drawing.dragTo {
-		rate := layer.clipArea.XRate(xy.X)
+		rate := layer.ClipArea.XRate(xy.X)
 		totime := drawing.xAxisRange.WhatTime(rate)
 		// HACK: cap flag not working!
 		if totime.After(drawing.timeSelection.From) {

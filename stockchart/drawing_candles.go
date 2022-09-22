@@ -47,7 +47,7 @@ func (drawing DrawingCandles) OnRedraw(layer *drawingLayer) {
 	)
 
 	// reduce the drawing area
-	drawArea := layer.clipArea.Shrink(0, 5)
+	drawArea := layer.ClipArea.Shrink(0, 5)
 	drawArea.Height -= 15
 	//fmt.Printf("clip:%s draw:%s\n", layer.clipArea, drawArea) // DEBUG:
 
@@ -77,7 +77,7 @@ func (drawing DrawingCandles) OnRedraw(layer *drawingLayer) {
 		} else if item.Close < item.Open {
 			candleColor = redCandle
 		}
-		layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(candleColor.Hexa())})
+		layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(candleColor.Hexa())})
 
 		// build the OC candle rect inside the drawing areaa
 		rcandle := new(Rect)
@@ -107,7 +107,7 @@ func (drawing DrawingCandles) OnRedraw(layer *drawingLayer) {
 			}
 
 			// draw OC
-			layer.ctx2D.FillRect(float64(rcandle.O.X), float64(rcandle.O.Y), float64(rcandle.Width), float64(rcandle.Height))
+			layer.Ctx2D.FillRect(float64(rcandle.O.X), float64(rcandle.O.Y), float64(rcandle.Width), float64(rcandle.Height))
 			//fmt.Printf("candle: %v\n", rcandle) // DEBUG:
 		}
 
@@ -115,7 +115,7 @@ func (drawing DrawingCandles) OnRedraw(layer *drawingLayer) {
 		rwick := new(Rect)
 		rwick.Width = imax(xpadding, 1)
 		xtimerate := drawing.xAxisRange.Progress(item.TimeStamp.Add(item.Duration / 2))
-		rwick.O.X = layer.clipArea.O.X + int(float64(layer.clipArea.Width)*xtimerate) - rwick.Width/2
+		rwick.O.X = layer.ClipArea.O.X + int(float64(layer.ClipArea.Width)*xtimerate) - rwick.Width/2
 
 		// need to reverse the candle in canvas coordinates
 		rwick.O.Y = drawArea.O.Y + drawArea.Height - int(yfactor*(item.Low-lowboundary))
@@ -124,7 +124,7 @@ func (drawing DrawingCandles) OnRedraw(layer *drawingLayer) {
 
 		// draw LH only if inside the drawing area,same color
 		if rwick = drawArea.And(*rwick); rwick != nil {
-			layer.ctx2D.FillRect(float64(rwick.O.X), float64(rwick.O.Y), float64(rwick.Width), float64(rwick.Height))
+			layer.Ctx2D.FillRect(float64(rwick.O.X), float64(rwick.O.Y), float64(rwick.Width), float64(rwick.Height))
 		}
 
 		// scan next item

@@ -41,12 +41,12 @@ func (drawing *DrawingYGrid) OnRedraw(layer *drawingLayer) {
 	//fmt.Printf("OnRedraw %v: starting\n", pdrawing) //DEBUG:
 
 	// setup default text drawing properties
-	layer.ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
-	layer.ctx2D.SetTextBaseline(canvas.MiddleCanvasTextBaseline)
-	layer.ctx2D.SetFont(`12px 'Roboto', sans-serif`)
+	layer.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
+	layer.Ctx2D.SetTextBaseline(canvas.MiddleCanvasTextBaseline)
+	layer.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
 
 	// reduce the cliping area
-	clipArea := layer.clipArea.Shrink(0, 5)
+	clipArea := layer.ClipArea.Shrink(0, 5)
 	clipArea.Height -= 15
 
 	// draw the Y Scale
@@ -59,18 +59,18 @@ func (drawing *DrawingYGrid) OnRedraw(layer *drawingLayer) {
 		ypos = float64(clipArea.BoundY(int(ypos)))
 
 		// draw the grid line
-		layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
+		layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
 		linew := 10.0
 		if !drawing.fScale {
 			linew = float64(clipArea.Width)
 		}
-		layer.ctx2D.FillRect(float64(clipArea.O.X), ypos, linew, 1)
+		layer.Ctx2D.FillRect(float64(clipArea.O.X), ypos, linew, 1)
 
 		// draw yscale label
 		if drawing.fScale {
 			strvalue := datarange.FormatData(val, yrange.StepSize()) // fmt.Sprintf("%.1f", val)
-			layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Darken(0.5).Hexa())})
-			layer.ctx2D.FillText(strvalue, float64(clipArea.O.Y+7), ypos+1, nil)
+			layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Darken(0.5).Hexa())})
+			layer.Ctx2D.FillText(strvalue, float64(clipArea.O.Y+7), ypos+1, nil)
 		}
 	}
 }

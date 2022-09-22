@@ -20,7 +20,7 @@ func NewDrawingBackground(series *DataList) *DrawingBackground {
 		drawing.OnRedraw(layer)
 	}
 	drawing.Drawing.OnChangeTimeSelection = func(layer *drawingLayer, timesel timeslice.TimeSlice) {
-		drawing.OnRedraw(layer)	
+		drawing.OnRedraw(layer)
 	}
 	return drawing
 }
@@ -28,18 +28,18 @@ func NewDrawingBackground(series *DataList) *DrawingBackground {
 func (drawing *DrawingBackground) OnRedraw(layer *drawingLayer) {
 
 	// copyright
-	layer.ctx2D.SetTextAlign(canvas.EndCanvasTextAlign)
-	layer.ctx2D.SetTextBaseline(canvas.BottomCanvasTextBaseline)
-	layer.ctx2D.SetFont(`20px 'Roboto', sans-serif`)
-	layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Lighten(0.5).Hexa())})
-	layer.ctx2D.FillText("@github.com/sunraylab", float64(layer.clipArea.End().X-50), float64(layer.clipArea.End().Y-50), nil)
+	layer.Ctx2D.SetTextAlign(canvas.EndCanvasTextAlign)
+	layer.Ctx2D.SetTextBaseline(canvas.BottomCanvasTextBaseline)
+	layer.Ctx2D.SetFont(`20px 'Roboto', sans-serif`)
+	layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Lighten(0.5).Hexa())})
+	layer.Ctx2D.FillText("@github.com/sunraylab", float64(layer.ClipArea.End().X-50), float64(layer.ClipArea.End().Y-50), nil)
 
 	// no data
 	if drawing.series == nil || drawing.series.TimeSlice().Duration() == nil {
-		layer.ctx2D.SetTextAlign(canvas.CenterCanvasTextAlign)
-		layer.ctx2D.SetTextBaseline(canvas.MiddleCanvasTextBaseline)
-		layer.ctx2D.SetFont(`bold 30px 'Roboto', sans-serif`)
-		layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
-		layer.ctx2D.FillText("no data", float64(layer.clipArea.Middle().X), float64(layer.clipArea.Middle().Y), nil)
+		layer.Ctx2D.SetTextAlign(canvas.CenterCanvasTextAlign)
+		layer.Ctx2D.SetTextBaseline(canvas.MiddleCanvasTextBaseline)
+		layer.Ctx2D.SetFont(`bold 30px 'Roboto', sans-serif`)
+		layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
+		layer.Ctx2D.FillText("no data", float64(layer.ClipArea.Middle().X), float64(layer.ClipArea.Middle().Y), nil)
 	}
 }

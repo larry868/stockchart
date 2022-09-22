@@ -56,3 +56,5 @@ Go provides a specific js file called `wasm_exec.js` that need to be served by y
 ## Change log
 
 - v0.1.0 alpha: contains lines commented with `// DEBUG:` for debug purpose only
+- v0.2.0 alpha: 
+  - X time axis cursor position in the graph area

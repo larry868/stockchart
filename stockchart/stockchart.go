@@ -32,7 +32,7 @@ func (chart StockChart) String() string {
 	str := fmt.Sprintf("%s\n", chart.ChartID)
 	for _, player := range chart.layers {
 		if player != nil {
-			str += fmt.Sprintf("  layer %22s: %p\n", player.layerId, player)
+			str += fmt.Sprintf("  layer %22s: %p\n", player.Name, player)
 			for _, pdrawing := range player.drawings {
 				if pdrawing != nil {
 					str += fmt.Sprintf("    drawing %18s: %p series:%p %v\n", pdrawing.Name, pdrawing, pdrawing.series, pdrawing.series)
@@ -143,18 +143,22 @@ func (pchart *StockChart) newLayer(id string, larea layerArea, bgcolor *rgb.Colo
 	canvasE.AttributeStyleMap().Set("padding", &typedom.Union{Value: js.ValueOf(`0`)})
 	canvasE.AttributeStyleMap().Set("margin", &typedom.Union{Value: js.ValueOf(`0`)})
 
+	// create the layer
+	layer := &drawingLayer{
+		Name:    strings.ToLower(strings.Trim(id, " ")),
+		layout:  larea,
+		canvasE: canvasE}
+
 	// set default canvas background color or leave it transparent
 	if bgcolor != nil {
 		canvasE.HTMLElement.AttributeStyleMap().Set("background-color", &typedom.Union{Value: js.ValueOf(bgcolor.Hexa())})
+		layer.BgColor = *bgcolor
 	}
-
-	// create the layer
-	layer := &drawingLayer{layerId: strings.ToLower(strings.Trim(id, " ")), layout: larea, canvasE: canvasE}
 
 	// to use a canvas we need to get a 2d or 3d contextto enable drawing, here we use a 2d context
 	// https://developer.mozilla.org/fr/docs/Web/API/HTMLCanvasElement/getContext
-	layer.ctx2D = canvas.CanvasRenderingContext2DFromWrapper(canvasE.GetContext("2d", "alias:false"))
-	if layer.ctx2D == nil {
+	layer.Ctx2D = canvas.CanvasRenderingContext2DFromWrapper(canvasE.GetContext("2d", "alias:false"))
+	if layer.Ctx2D == nil {
 		log.Println("unable to get the canvas 2D context for drawing")
 		return nil
 	}
