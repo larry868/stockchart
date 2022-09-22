@@ -112,6 +112,7 @@ func NewStockChart(chartid string, bgcolor *rgb.Color, series *DataList) (*Stock
 	if layer := chart.newLayer("5-hover", lAREA_GRAPH, nil); layer != nil {
 		drawing := NewDrawingHoverCandles(series, &selXAxisRange)
 		layer.drawings = append(layer.drawings, &drawing.Drawing)
+		layer.SetMouseHandlers(chart)
 		chart.layers[5] = layer
 	}
 

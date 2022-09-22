@@ -44,8 +44,8 @@ func NewDrawingTimeSelector(series *DataList, xrange *timeslice.TimeSlice) *Draw
 	drawing.Drawing.OnMouseUp = func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) (timesel *timeslice.TimeSlice) {
 		return drawing.OnMouseUp(layer, xy, event)
 	}
-	drawing.Drawing.OnMouseMove = func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) (fRedraw bool) {
-		return drawing.OnMouseMove(layer, xy, event)
+	drawing.Drawing.OnMouseMove = func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) {
+		drawing.OnMouseMove(layer, xy, event)
 	}
 	drawing.Drawing.OnWheel = func(layer *drawingLayer, event *htmlevent.WheelEvent) (timesel *timeslice.TimeSlice) {
 		return drawing.OnWheel(layer, event)
@@ -126,7 +126,7 @@ func (drawing *DrawingTimeSelector) OnMouseUp(layer *drawingLayer, xy Point, eve
 }
 
 // OnMouseMove change the cursor when hovering a button, or change the timeslice selection if dragging the buttons
-func (drawing *DrawingTimeSelector) OnMouseMove(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) (fRedraw bool) {
+func (drawing *DrawingTimeSelector) OnMouseMove(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) {
 	//fmt.Printf("%q mousemove xy:%v\n", pdrawing.Name xy) //DEBUG:
 	if drawing.xAxisRange == nil {
 		log.Printf("OnMouseMove %q fails: missing data", drawing.Name)
@@ -152,7 +152,7 @@ func (drawing *DrawingTimeSelector) OnMouseMove(layer *drawingLayer, xy Point, e
 		// HACK: cap flag not working!
 		if fromtime.Before(drawing.timeSelection.To) {
 			drawing.timeSelection.MoveFrom(fromtime, true)
-			fRedraw = true
+			layer.Redraw()
 		}
 
 	} else if drawing.dragTo {
@@ -161,10 +161,9 @@ func (drawing *DrawingTimeSelector) OnMouseMove(layer *drawingLayer, xy Point, e
 		// HACK: cap flag not working!
 		if totime.After(drawing.timeSelection.From) {
 			drawing.timeSelection.MoveTo(totime, true)
-			fRedraw = true
+			layer.Redraw()
 		}
 	}
-	return fRedraw
 }
 
 // OnWheel manage zoom and shifting the time selection

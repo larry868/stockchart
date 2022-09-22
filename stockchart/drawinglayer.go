@@ -35,7 +35,7 @@ type drawingLayer struct {
 }
 
 func (layer drawingLayer) String() string {
-	str := fmt.Sprintf("%q, canvasE:%p, ctx2D:%p area:%v drawings:%d", layer.layerId, layer.canvasE, layer.ctx2D, layer.clipArea, len(layer.drawings))
+	str := fmt.Sprintf("%q canvasE:%p, ctx2D:%p area:{%v} nb drawings:%d", layer.layerId, layer.canvasE, layer.ctx2D, layer.clipArea, len(layer.drawings))
 	return str
 }
 
@@ -43,9 +43,9 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 
 	// Define functions to capture mouse events on this layer,
 	// only if the layer contains at least one mouse function on its drawings
-	he := layer.HandledEvents()
-	fmt.Printf("layer %q he=%b\n", layer, he)
-	if (he & evt_MouseDown) != 0 {
+	hme := layer.HandledMouseEvents()
+	fmt.Printf("layer %q, mouse event handled=%08b\n", layer.layerId, hme) // DEBUG:
+	if (hme & evt_MouseDown) != 0 {
 		layer.canvasE.SetOnMouseDown(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMousePos(event)
 			if xy.IsIn(layer.clipArea) {
@@ -58,7 +58,7 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 		})
 	}
 
-	if (he & evt_MouseUp) != 0 {
+	if (hme & evt_MouseUp) != 0 {
 		layer.canvasE.SetOnMouseUp(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMousePos(event)
 			var timesel *timeslice.TimeSlice
@@ -77,25 +77,19 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 		})
 	}
 
-	if (he & evt_MouseMove) != 0 {
+	if (hme & evt_MouseMove) != 0 {
 
 		layer.canvasE.SetOnMouseMove(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMousePos(event)
-			fRedraw := false
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseMove != nil {
-					if drawing.OnMouseMove(layer, xy, event) {
-						fRedraw = true
-					}
+					drawing.OnMouseMove(layer, xy, event)
 				}
-			}
-			if fRedraw {
-				layer.Redraw()
 			}
 		})
 	}
 
-	if (he & evt_Wheel) != 0 {
+	if (hme & evt_Wheel) != 0 {
 		layer.canvasE.SetOnWheel(func(event *htmlevent.WheelEvent, currentTarget *html.HTMLElement) {
 			var timesel *timeslice.TimeSlice
 			for _, drawing := range layer.drawings {
@@ -192,7 +186,7 @@ const (
 	evt_Wheel     evtHandler = 0b00001000
 )
 
-func (layer *drawingLayer) HandledEvents() evtHandler {
+func (layer *drawingLayer) HandledMouseEvents() evtHandler {
 	var e evtHandler
 	for _, drawing := range layer.drawings {
 		if drawing.OnMouseUp != nil {
