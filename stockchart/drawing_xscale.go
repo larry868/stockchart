@@ -1,7 +1,6 @@
 package stockchart
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -39,8 +38,6 @@ func (drawing DrawingXScale) OnRedraw(layer *drawingLayer) {
 		return
 	}
 
-	// do not clear the drawing grid, it's transparent
-
 	// setup default text drawing properties
 	layer.ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
 	layer.ctx2D.SetTextBaseline(canvas.BottomCanvasTextBaseline)
@@ -50,7 +47,7 @@ func (drawing DrawingXScale) OnRedraw(layer *drawingLayer) {
 	const minxstepwidth = 100.0
 	maxscans := float64(layer.clipArea.Width) / minxstepwidth
 	maskmain := drawing.xAxisRange.GetScanMask(uint(maxscans))
-	fmt.Printf("maskmain=%v\n", maskmain)
+	//fmt.Printf("layer %q, drawing %q, maskmain=%v\n", layer.layerId, drawing.Name, maskmain) // DEBUG:
 
 	// draw the second grid, before the main grid because it can overlay
 	if maskmain > timeslice.MASK_SHORTEST {
@@ -64,41 +61,42 @@ func (drawing DrawingXScale) OnRedraw(layer *drawingLayer) {
 
 			// calculate xpos. if the timeslice is a single date then draw a single bar at the middle
 			xtimerate := drawing.xAxisRange.Progress(xtime)
-			xpos := float64(layer.clipArea.O.X) + float64(layer.clipArea.Width)*xtimerate
+			xpos := layer.clipArea.O.X + int(float64(layer.clipArea.Width)*xtimerate)
 
 			// draw the second grid line
-			fh := float64(layer.clipArea.Height)
+			fh := layer.clipArea.Height
 			if !drawing.fFullGrid {
 				fh = 10
 			}
-			layer.ctx2D.FillRect(xpos, float64(layer.clipArea.O.Y+layer.clipArea.Height), 1, -fh)
+			layer.ctx2D.FillRect(float64(xpos), float64(layer.clipArea.O.Y+layer.clipArea.Height), 1.0, -float64(fh))
 		}
 	}
 
 	// draw the main grid
-	lastlabelend := 0.0
+	lastlabelend := 0
 	var xtime, lastxtime time.Time
 	for drawing.xAxisRange.Scan(&xtime, maskmain, true); !xtime.IsZero(); drawing.xAxisRange.Scan(&xtime, maskmain, false) {
 
 		// calculate xpos. if the timeslice is a single date then draw a single bar at the middle
 		xtimerate := drawing.xAxisRange.Progress(xtime)
-		xpos := float64(layer.clipArea.O.X) + float64(layer.clipArea.Width)*xtimerate
+		xpos := layer.clipArea.O.X + int(float64(layer.clipArea.Width)*xtimerate)
 
 		// draw the main grid line
 		layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Alpha(50).Hexa())})
-		fh := float64(layer.clipArea.Height)
+		fh := layer.clipArea.Height
 		if !drawing.fFullGrid {
 			fh = 15
 		}
-		layer.ctx2D.FillRect(xpos, float64(layer.clipArea.O.Y+layer.clipArea.Height), 1, -fh)
+		layer.ctx2D.FillRect(float64(xpos), float64(layer.clipArea.O.Y+layer.clipArea.Height), 1.0, -float64(fh))
+		//fmt.Printf("xaxis xpos:%v\n", xpos) // DEBUG:
 
 		// draw time label if not overlapping last label
 		if (xpos + 2) > lastlabelend {
 			strdtefmt := maskmain.GetTimeFormat(xtime, lastxtime)
 			label := xtime.Format(strdtefmt)
 			layer.ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Darken(0.5).Hexa())})
-			layer.ctx2D.FillText(label, xpos+2, float64(layer.clipArea.End().Y)-1, nil)
-			lastlabelend = xpos + 2 + layer.ctx2D.MeasureText(label).Width()
+			layer.ctx2D.FillText(label, float64(xpos+2), float64(layer.clipArea.End().Y)-1, nil)
+			lastlabelend = xpos + 2 + int(layer.ctx2D.MeasureText(label).Width())
 		}
 
 		// scan next

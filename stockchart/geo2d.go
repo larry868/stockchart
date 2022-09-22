@@ -3,6 +3,7 @@ package stockchart
 import (
 	"fmt"
 	"log"
+	"math"
 )
 
 // A simple point in a 2D plan
@@ -45,7 +46,7 @@ func (pr1 *Rect) Equal(pr2 *Rect) bool {
 
 // returns the Middle of the rect
 func (r Rect) Middle() Point {
-	return Point{X: r.O.X + r.Width/2, Y: r.O.Y + r.Height/2}
+	return Point{X: r.O.X + int(math.Round(float64(r.Width)/2.0)), Y: r.O.Y + int(math.Round(float64(r.Height)/2.0))}
 }
 
 // returns the endpoint of the rect
@@ -97,7 +98,7 @@ func (r Rect) YRate(y int) float64 {
 
 // returns where is y inside the rect
 //
-//	if x is over EndPoint.Y then return 1
+//	if x is over End.Y then return 1
 //	if x is before O.X then return 0
 //	if XSize is zero then return 0
 func (r Rect) XRate(x int) float64 {
