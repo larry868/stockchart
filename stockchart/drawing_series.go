@@ -6,8 +6,8 @@ import (
 
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
-	"github.com/sunraylab/rgb/bootstrapcolor.go"
-	"github.com/sunraylab/timeline/timeslice"
+	"github.com/sunraylab/rgb/v2/bootstrapcolor.go"
+	"github.com/sunraylab/timeline/v2"
 )
 
 type DrawingSeries struct {
@@ -15,44 +15,44 @@ type DrawingSeries struct {
 	fFillArea bool // fullfil the area or draw only the line
 }
 
-func NewDrawingSeries(series *DataList, xrange *timeslice.TimeSlice, fFillArea bool) *DrawingSeries {
+func NewDrawingSeries(series *DataList, xrange *timeline.TimeSlice, fFillArea bool) *DrawingSeries {
 	drawing := new(DrawingSeries)
 	drawing.Name = "series"
 	drawing.series = series
 	drawing.xAxisRange = xrange
 	drawing.fFillArea = fFillArea
-	drawing.MainColor = *bootstrapcolor.Blue.Lighten(0.5)
-	drawing.Drawing.OnRedraw = func(layer *drawingLayer) {
-		drawing.OnRedraw(layer)
+	drawing.MainColor = bootstrapcolor.Blue.Lighten(0.5)
+	drawing.Drawing.OnRedraw = func() {
+		drawing.OnRedraw()
 	}
-	drawing.Drawing.OnChangeTimeSelection = func(layer *drawingLayer, timesel timeslice.TimeSlice) {
-		drawing.OnChangeTimeSelection(layer, timesel)
+	drawing.Drawing.OnChangeTimeSelection = func(timesel timeline.TimeSlice) {
+		drawing.OnChangeTimeSelection(timesel)
 	}
 	return drawing
 }
 
-func (drawing DrawingSeries) OnRedraw(layer *drawingLayer) {
+func (drawing DrawingSeries) OnRedraw() {
 	if drawing.series == nil || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
 		log.Printf("OnRedraw %s fails: unable to proceed given data", drawing.Name)
 		return
 	}
 
 	// setup drawing tools
-	layer.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
+	drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
 	if drawing.fFillArea {
-		layer.Ctx2D.SetLineWidth(3)
+		drawing.Ctx2D.SetLineWidth(3)
 	} else {
-		layer.Ctx2D.SetLineWidth(2)
+		drawing.Ctx2D.SetLineWidth(2)
 	}
-	layer.Ctx2D.SetLineJoin(canvas.RoundCanvasLineJoin)
-	layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Lighten(0.8).Hexa())})
+	drawing.Ctx2D.SetLineJoin(canvas.RoundCanvasLineJoin)
+	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Lighten(0.8).Hexa())})
 
 	// reduce the cliping area
-	drawArea := layer.ClipArea.Shrink(0, 5)
-	//fmt.Printf("clip:%s draw:%s\n", layer.clipArea, drawArea) // DEBUG:
+	drawArea := drawing.ClipArea.Shrink(0, 5)
+	//fmt.Printf("clip:%s draw:%s\n", drawing.clipArea, drawArea) // DEBUG:
 
 	// get xfactor & yfactor according to time selection
-	xfactor := float64(drawArea.Width) / time.Duration(*drawing.xAxisRange.Duration()).Seconds()
+	xfactor := float64(drawArea.Width) / float64(*drawing.xAxisRange.Duration())
 	yfactor := float64(drawArea.Height) / drawing.series.DataRange(drawing.xAxisRange, 10).Delta()
 	lowboundary := drawing.series.DataRange(drawing.xAxisRange, 10).Low()
 	//fmt.Printf("xfactor:%f yfactor:%f\n", xfactor, yfactor) // DEBUG:
@@ -60,33 +60,33 @@ func (drawing DrawingSeries) OnRedraw(layer *drawingLayer) {
 	// scan all points
 	var x0, xclose int
 	first := true
-	item := drawing.series.Head
+	item := drawing.series.Tail
 	for item != nil {
 		// skip items out of range
-		if item.TimeStamp.Before(drawing.xAxisRange.From) {
+		if item.TimeSlice.From.Before(drawing.xAxisRange.From) {
 			// scan next item
 			item = item.Next
 			continue
 		}
-		if item.TimeStamp.Add(item.Duration).After(drawing.xAxisRange.To) {
+		if item.TimeSlice.To.After(drawing.xAxisRange.To) {
 			break
 		}
 
 		// draw the path
 		if first {
 			first = false
-			xopen := drawArea.O.X + int(xfactor*item.TimeStamp.Sub(drawing.xAxisRange.From).Seconds())
+			xopen := drawArea.O.X + int(xfactor*float64(item.TimeSlice.From.Sub(drawing.xAxisRange.From)))
 			yopen := drawArea.O.Y + drawArea.Height - int(yfactor*(item.Open-lowboundary))
-			layer.Ctx2D.MoveTo(float64(xopen), float64(yopen))
-			layer.Ctx2D.BeginPath()
-			layer.Ctx2D.LineTo(float64(xopen), float64(yopen))
+			drawing.Ctx2D.MoveTo(float64(xopen), float64(yopen))
+			drawing.Ctx2D.BeginPath()
+			drawing.Ctx2D.LineTo(float64(xopen), float64(yopen))
 			x0 = xopen
 			// fmt.Printf("xopen=%d yopen=%d\n", xopen, yopen) // DEBUG:
 		}
 
-		xclose = drawArea.O.X + int(xfactor*item.TimeStamp.Add(item.Duration).Sub(drawing.xAxisRange.From).Seconds())
+		xclose = drawArea.O.X + int(xfactor*float64(item.TimeSlice.To.Sub(drawing.xAxisRange.From)))
 		yclose := drawArea.O.Y + drawArea.Height - int(yfactor*(item.Close-lowboundary))
-		layer.Ctx2D.LineTo(float64(xclose), float64(yclose))
+		drawing.Ctx2D.LineTo(float64(xclose), float64(yclose))
 		//fmt.Printf("xclose=%d yclose=%d\n", xclose, yclose)  // DEBUG:
 
 		// scan next item
@@ -94,20 +94,20 @@ func (drawing DrawingSeries) OnRedraw(layer *drawingLayer) {
 	}
 
 	// draw the top line
-	layer.Ctx2D.Stroke()
+	drawing.Ctx2D.Stroke()
 
 	// then draw the area
 	if drawing.fFillArea {
-		layer.Ctx2D.LineTo(float64(xclose), float64(layer.ClipArea.End().Y))
-		layer.Ctx2D.LineTo(float64(x0), float64(layer.ClipArea.End().Y))
-		layer.Ctx2D.ClosePath()
+		drawing.Ctx2D.LineTo(float64(xclose), float64(drawing.ClipArea.End().Y))
+		drawing.Ctx2D.LineTo(float64(x0), float64(drawing.ClipArea.End().Y))
+		drawing.Ctx2D.ClosePath()
 		fillrule := canvas.NonzeroCanvasFillRule
-		layer.Ctx2D.Fill(&fillrule)
+		drawing.Ctx2D.Fill(&fillrule)
 	}
 }
 
 // OnChangeTimeSelection
-func (pdrawing *DrawingSeries) OnChangeTimeSelection(layer *drawingLayer, timesel timeslice.TimeSlice) {
+func (pdrawing *DrawingSeries) OnChangeTimeSelection(timesel timeline.TimeSlice) {
 	*pdrawing.xAxisRange = timesel
-	pdrawing.OnRedraw(layer)
+	pdrawing.OnRedraw()
 }

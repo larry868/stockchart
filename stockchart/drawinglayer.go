@@ -10,8 +10,8 @@ import (
 	"github.com/gowebapi/webapi/html"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/gowebapi/webapi/html/htmlevent"
-	"github.com/sunraylab/rgb"
-	"github.com/sunraylab/timeline/timeslice"
+	"github.com/sunraylab/rgb/v2"
+	"github.com/sunraylab/timeline/v2"
 )
 
 type layerArea int
@@ -28,12 +28,17 @@ const (
 type drawingLayer struct {
 	Name     string
 	ClipArea Rect
-	BgColor  rgb.Color
 	Ctx2D    *canvas.CanvasRenderingContext2D
 
 	canvasE  *canvas.HTMLCanvasElement
 	layout   layerArea
 	drawings []*Drawing //TimeSeriesDrawer
+}
+
+func (layer *drawingLayer) AddDrawing(d *Drawing, bgcolor rgb.Color) {
+	d.drawingLayer = layer
+	d.BackgroundColor = bgcolor
+	layer.drawings = append(layer.drawings, d)
 }
 
 func (layer drawingLayer) String() string {
@@ -53,7 +58,7 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 			if xy.IsIn(layer.ClipArea) {
 				for _, drawing := range layer.drawings {
 					if drawing.OnMouseDown != nil {
-						drawing.OnMouseDown(layer, xy, event)
+						drawing.OnMouseDown(xy, event)
 					}
 				}
 			}
@@ -63,10 +68,10 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 	if (hme & evt_MouseUp) != 0 {
 		layer.canvasE.SetOnMouseUp(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMousePos(event)
-			var timesel *timeslice.TimeSlice
+			var timesel *timeline.TimeSlice
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseUp != nil {
-					tsel := drawing.OnMouseUp(layer, xy, event)
+					tsel := drawing.OnMouseUp(xy, event)
 					if tsel != nil {
 						timesel = tsel
 					}
@@ -84,7 +89,7 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 			xy := getMousePos(event)
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseMove != nil {
-					drawing.OnMouseMove(layer, xy, event)
+					drawing.OnMouseMove(xy, event)
 				}
 			}
 		})
@@ -95,7 +100,7 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 			xy := getMousePos(event)
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseEnter != nil {
-					drawing.OnMouseEnter(layer, xy, event)
+					drawing.OnMouseEnter(xy, event)
 				}
 			}
 		})
@@ -106,7 +111,7 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 			xy := getMousePos(event)
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseLeave != nil {
-					drawing.OnMouseLeave(layer, xy, event)
+					drawing.OnMouseLeave(xy, event)
 				}
 			}
 		})
@@ -114,10 +119,10 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 
 	if (hme & evt_Wheel) != 0 {
 		layer.canvasE.SetOnWheel(func(event *htmlevent.WheelEvent, currentTarget *html.HTMLElement) {
-			var timesel *timeslice.TimeSlice
+			var timesel *timeline.TimeSlice
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseUp != nil {
-					tsel := drawing.OnWheel(layer, event)
+					tsel := drawing.OnWheel(event)
 					if tsel != nil {
 						timesel = tsel
 					}
@@ -182,19 +187,19 @@ func (layer *drawingLayer) Redraw() {
 	for _, drawing := range layer.drawings {
 		if drawing.OnRedraw != nil {
 			//fmt.Printf("layer:%15s drawing:%15s OnRedraw\n", layer.layerId, drawing.Name) // DEBUG:
-			drawing.OnRedraw(layer)
+			drawing.OnRedraw()
 		}
 	}
 }
 
 // Update chart selection to all drawings on the layer
-func (layer *drawingLayer) ChangeTimeSelection(timesel timeslice.TimeSlice) {
+func (layer *drawingLayer) ChangeTimeSelection(timesel timeline.TimeSlice) {
 	if layer.layout != lAREA_NAVBAR {
 		layer.Clear()
 		for _, drawing := range layer.drawings {
 			if drawing.OnChangeTimeSelection != nil {
 				//fmt.Printf("layer:%15s drawing:%15s OnSelectionChange--> Xsel=%v\n", layer.layerId, drawing.Name, timesel) // DEBUG:
-				drawing.OnChangeTimeSelection(layer, timesel)
+				drawing.OnChangeTimeSelection(timesel)
 			}
 		}
 	}

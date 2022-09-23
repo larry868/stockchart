@@ -58,3 +58,7 @@ Go provides a specific js file called `wasm_exec.js` that need to be served by y
 - v0.1.0 alpha: contains lines commented with `// DEBUG:` for debug purpose only
 - v0.2.0 alpha: 
   - X time axis cursor position in the graph area
+- v0.2.1 alpha: 
+  - better management of datalist, handle missing datapoints
+- v0.3.0 alpha:
+  - major refactoring

@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/sunraylab/gowebstockchart/stockchart"
-	"github.com/sunraylab/rgb/bootstrapcolor.go"
+	"github.com/sunraylab/rgb/v2"
 )
 
 // the main func is required by the GOOS=js GOARCH=wasm go builder
@@ -19,7 +19,7 @@ func main() {
 	dataset := BuildRandomDataset()
 
 	// build a new chart
-	_, err := stockchart.NewStockChart("mychart", bootstrapcolor.Gray.Lighten(0.8), dataset)
+	_, err := stockchart.NewStockChart("mychart", rgb.Gray.Lighten(0.8), dataset)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)

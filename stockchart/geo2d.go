@@ -1,6 +1,7 @@
 package stockchart
 
 import (
+	"errors"
 	"fmt"
 	"math"
 )
@@ -114,12 +115,13 @@ func (r Rect) XRate(x int) float64 {
 	return rate
 }
 
-// returns a Shrinked rect.
+// Returns a Shrinked rect calculated from the center of r.
+// x and y are added on both sides
 //
-//	if x or y are <0 then the rect is expanded
-//	x and y are expressed in Rect unit, not in rate
-//	if x or y are greater than the size then rect become a single point with zero size
-func (r Rect) Shrink(x int, y int) *Rect {
+//	x and y are expressed in Rect unit, not in rate.
+//	if x or y are <0 then the rect is expanded.
+//	if x or y are greater than the size then rect become a single point with zero size.
+func (r Rect) Shrink(x int, y int) Rect {
 	xo := r.O.X + x
 	if xo < 0 {
 		xo = 0
@@ -129,7 +131,7 @@ func (r Rect) Shrink(x int, y int) *Rect {
 		yo = 0
 	}
 
-	o := &Point{X: xo, Y: yo}
+	o := Point{X: xo, Y: yo}
 
 	xs := int(r.Width) - x - x
 	if xs < 0 {
@@ -140,7 +142,7 @@ func (r Rect) Shrink(x int, y int) *Rect {
 		ys = 0
 	}
 
-	return &Rect{O: *o, Width: xs, Height: ys}
+	return Rect{O: o, Width: xs, Height: ys}
 }
 
 // And returns a rect which correspond to common area of thisRect and anotherRect.
@@ -167,13 +169,24 @@ func (thisRect Rect) And(anotherRect Rect) (AndRect *Rect) {
 }
 
 // Box r within the area. That means r is inside the area, if required recalculate its position.
-func (r *Rect) Box(area Rect) {
+// size stays unchanged. If the box is greater than the area, then return an error.
+func (r *Rect) Box(area Rect) error {
+	if r.Width > area.Width || r.Height > area.Height {
+		return errors.New("boxing r in area fails: r too big")
+	}
 	if r.O.X < area.O.X {
 		r.O.X = area.O.X
+	}
+	if r.O.Y < area.O.Y {
+		r.O.Y = area.O.Y
 	}
 	if r.End().X > area.End().X {
 		r.O.X = area.End().X - r.Width
 	}
+	if r.End().Y > area.End().Y {
+		r.O.Y = area.End().Y - r.Height
+	}
+	return nil
 }
 
 // BoundX returns X bounded by the rect boundaries

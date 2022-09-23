@@ -6,9 +6,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/sunraylab/rgb"
-	"github.com/sunraylab/rgb/bootstrapcolor.go"
-	"github.com/sunraylab/timeline/timeslice"
+	"github.com/sunraylab/rgb/v2"
+	"github.com/sunraylab/timeline/v2"
 
 	"github.com/gowebapi/webapi"
 	"github.com/gowebapi/webapi/core/js"
@@ -47,7 +46,7 @@ func (chart StockChart) String() string {
 // An HTML page can have multiple <stockchart> but with different chartid. The layout of the chart is composed of multiples layers which are stacked canvas.
 //
 // Returns the stockchart created or an error if canvasid is not found.
-func NewStockChart(chartid string, bgcolor *rgb.Color, series *DataList) (*StockChart, error) {
+func NewStockChart(chartid string, bgcolor rgb.Color, series *DataList) (*StockChart, error) {
 	// some cleaning
 	chartid = strings.ToLower(strings.Trim(chartid, " "))
 
@@ -60,58 +59,51 @@ func NewStockChart(chartid string, bgcolor *rgb.Color, series *DataList) (*Stock
 	// build the chart object
 	chart := &StockChart{ChartID: chartid, masterE: stockchartE}
 
-	// the navbar and the selection shows the full dataset.
-	// the selection will be updated but not the nav one.
+	// The navbar and the selection shows the full dataset.
+	// The selection will be updated but not the nav one.
+	// Add 10% at the end to represents the future.
 	navXAxisRange := series.TimeSlice()
-	selXAxisRange := series.TimeSlice()
+	navXAxisRange.ToExtend(timeline.Duration(float64(*navXAxisRange.Duration()) * 0.1))
+	selXAxisRange := navXAxisRange
 
 	// create master layer layout, white bg and without drawings
 	// the master layer covers all the <stockchart> element size, and is build first at the background
-	if layer := chart.newLayer("0-bg", lAREA_FULL, bgcolor); layer != nil {
+	if layer := chart.addnewLayer("0-bg", lAREA_FULL, bgcolor); layer != nil {
 		chart.layers[0] = layer
 	}
 
 	// the navbar layer
-	if layer := chart.newLayer("1-navbar", lAREA_NAVBAR, bootstrapcolor.White.Clone()); layer != nil {
-		drawing1 := NewDrawingSeries(series, &navXAxisRange, true)
-		drawing2 := NewDrawingXGrid(series, &navXAxisRange, true)
-		layer.drawings = append(layer.drawings, &drawing1.Drawing)
-		layer.drawings = append(layer.drawings, &drawing2.Drawing)
+	if layer := chart.addnewLayer("1-navbar", lAREA_NAVBAR, rgb.White); layer != nil {
+		layer.AddDrawing(&NewDrawingSeries(series, &navXAxisRange, true).Drawing, rgb.White)
+		layer.AddDrawing(&NewDrawingXGrid(series, &navXAxisRange, true).Drawing, rgb.None)
 		chart.layers[1] = layer
 	}
 
 	// the transparent time selector layer
-	if layer := chart.newLayer("2-timeselector", lAREA_NAVBAR, nil); layer != nil {
-		drawing := NewDrawingTimeSelector(series, &navXAxisRange)
-		layer.drawings = append(layer.drawings, &drawing.Drawing)
+	if layer := chart.addnewLayer("2-timeselector", lAREA_NAVBAR, rgb.None); layer != nil {
+		layer.AddDrawing(&NewDrawingTimeSelector(series, &navXAxisRange).Drawing, rgb.None)
 		layer.SetMouseHandlers(chart)
 		chart.layers[2] = layer
 	}
 
 	// the yscale layer
-	if layer := chart.newLayer("3-yscale", lAREA_YSCALE, bootstrapcolor.White.Clone()); layer != nil {
-		drawing := NewDrawingYGrid(series, &selXAxisRange, true)
-		layer.drawings = append(layer.drawings, &drawing.Drawing)
+	if layer := chart.addnewLayer("3-yscale", lAREA_YSCALE, rgb.White); layer != nil {
+		layer.AddDrawing(&NewDrawingYGrid(series, &selXAxisRange, true).Drawing, rgb.White)
 		chart.layers[3] = layer
 	}
 
 	// the chart layer
-	if layer := chart.newLayer("4-chart", lAREA_GRAPH, bootstrapcolor.White.Clone()); layer != nil {
-		drawing0 := NewDrawingBackground(series)
-		drawing1 := NewDrawingYGrid(series, &selXAxisRange, false)
-		drawing2 := NewDrawingXGrid(series, &selXAxisRange, false)
-		drawing4 := NewDrawingCandles(series, &selXAxisRange)
-		layer.drawings = append(layer.drawings, &drawing0.Drawing)
-		layer.drawings = append(layer.drawings, &drawing1.Drawing)
-		layer.drawings = append(layer.drawings, &drawing2.Drawing)
-		layer.drawings = append(layer.drawings, &drawing4.Drawing)
+	if layer := chart.addnewLayer("4-chart", lAREA_GRAPH, rgb.White); layer != nil {
+		layer.AddDrawing(&NewDrawingBackground(series).Drawing, rgb.None)
+		layer.AddDrawing(&NewDrawingYGrid(series, &selXAxisRange, false).Drawing, rgb.None)
+		layer.AddDrawing(&NewDrawingXGrid(series, &selXAxisRange, false).Drawing, rgb.None)
+		layer.AddDrawing(&NewDrawingCandles(series, &selXAxisRange).Drawing, rgb.White)
 		chart.layers[4] = layer
 	}
 
 	// the hover transprent layer
-	if layer := chart.newLayer("5-hover", lAREA_GRAPH, nil); layer != nil {
-		drawing := NewDrawingHoverCandles(series, &selXAxisRange)
-		layer.drawings = append(layer.drawings, &drawing.Drawing)
+	if layer := chart.addnewLayer("5-hover", lAREA_GRAPH, rgb.None); layer != nil {
+		layer.AddDrawing(&NewDrawingHoverCandles(series, &selXAxisRange).Drawing, rgb.White)
 		layer.SetMouseHandlers(chart)
 		chart.layers[5] = layer
 	}
@@ -127,12 +119,12 @@ func NewStockChart(chartid string, bgcolor *rgb.Color, series *DataList) (*Stock
 	return chart, nil
 }
 
-// newLayer create a new canvas, inside the targetE div, then fill its bg color or leave it transparent.
+// addnewLayer create a new canvas, inside the targetE div, then fill its bg color or leave it transparent.
 // The layer embed the WEBGL 2D drawing context.
 // It's added to the chart stack layers and moved and sized according to layoutStyle and master area
 //
 // return the chartLayer corresponding to this layer, or nil if an error occurs
-func (pchart *StockChart) newLayer(id string, larea layerArea, bgcolor *rgb.Color) *drawingLayer {
+func (pchart *StockChart) addnewLayer(id string, larea layerArea, bgcolor rgb.Color) *drawingLayer {
 	// create a canvas
 	domE := webapi.GetWindow().Document().CreateElement("canvas", &webapi.Union{Value: js.ValueOf("dom.Node")})
 	domE.SetId("canvas" + pchart.ChartID + strings.ToLower(strings.Trim(id, " ")))
@@ -150,9 +142,8 @@ func (pchart *StockChart) newLayer(id string, larea layerArea, bgcolor *rgb.Colo
 		canvasE: canvasE}
 
 	// set default canvas background color or leave it transparent
-	if bgcolor != nil {
+	if _, _, _, alpha := bgcolor.RGBA(); alpha != 0 {
 		canvasE.HTMLElement.AttributeStyleMap().Set("background-color", &typedom.Union{Value: js.ValueOf(bgcolor.Hexa())})
-		layer.BgColor = *bgcolor
 	}
 
 	// to use a canvas we need to get a 2d or 3d contextto enable drawing, here we use a 2d context
@@ -241,7 +232,7 @@ func (pchart *StockChart) Redraw() {
 // ChangeTimeSelection updates all layers to reflect the new timsel.
 // It's called by the time selector in the navbar when user navigates,
 // but can be called directly from outside of the chart.
-func (pchart *StockChart) ChangeTimeSelection(timesel timeslice.TimeSlice) {
+func (pchart *StockChart) ChangeTimeSelection(timesel timeline.TimeSlice) {
 	if pchart.isDrawing {
 		fmt.Println("changeTimeSelection request canceled. drawing still in progress")
 		return

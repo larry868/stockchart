@@ -5,42 +5,59 @@ import (
 	"time"
 
 	"github.com/sunraylab/datarange"
-	"github.com/sunraylab/timeline/timeslice"
+	"github.com/sunraylab/timeline/v2"
 )
 
-// DataPoint is a value at a given timestamp.
-// It's linked with previous and following datapoint
-type DataPoint struct {
-	Val   float64
-	Open  float64
-	Low   float64
-	High  float64
-	Close float64
+// DataStock is a value at a given timestamp.
+// It's linked with previous and following data
+type DataStock struct {
+	Open   float64
+	Low    float64
+	High   float64
+	Close  float64
+	Volume float64
 
-	TimeStamp time.Time
-	Duration  time.Duration
-	Next      *DataPoint
-	Prev      *DataPoint
+	timeline.TimeSlice
+
+	Next *DataStock // going to the head
+	Prev *DataStock // going to the tail
 }
 
-func (dp DataPoint) String() string {
-	str := fmt.Sprintf("o=%f l=%f h=%f c=%f from:%s\n", dp.Open, dp.Low, dp.High, dp.Close, dp.TimeStamp)
+func (dp DataStock) String() string {
+	str := fmt.Sprintf("o=%v h=%v l=%v c=%v v=%v at:%s\n", dp.Open, dp.High, dp.Low, dp.Close, dp.Volume, dp.TimeSlice)
 	return str
 }
 
-// DataList is a chained list of DataPoint.
+// DataList is a time ordered chained list of DataPoint.
 // We assume that ordered points are linked in chronological order
 type DataList struct {
-	Unit string
-	Head *DataPoint
-	Tail *DataPoint
+	Name string
+	Tail *DataStock // the tail !-----...
+	Head *DataStock // ...-----! the head
+}
+
+// Append a dataPoint to the head
+func (dl *DataList) Append(data *DataStock) {
+	// add the data point to the list
+	data.Next = nil
+	data.Prev = dl.Head
+	// link previous data
+	if data.Prev != nil {
+		data.Prev.Next = data
+	}
+	// first data
+	if dl.Tail == nil {
+		dl.Tail = data
+	}
+	// update head
+	dl.Head = data
 }
 
 // return the dataPoint at t time, nil if no points found
-func (l DataList) GetAt(t time.Time) (data *DataPoint) {
-	item := l.Head
+func (dl DataList) GetDataAt(t time.Time) (data *DataStock) {
+	item := dl.Tail
 	for item != nil {
-		if (t.Equal(item.TimeStamp) || t.After(item.TimeStamp)) && (t.Equal(item.TimeStamp.Add(item.Duration)) || t.Before(item.TimeStamp.Add(item.Duration))) {
+		if (t.Equal(item.TimeSlice.From) || t.After(item.TimeSlice.From)) && (t.Equal(item.TimeSlice.To) || t.Before(item.TimeSlice.To)) {
 			return item
 		}
 		item = item.Next
@@ -51,29 +68,27 @@ func (l DataList) GetAt(t time.Time) (data *DataPoint) {
 // TimeSlice returns the time boundaries of the DataList, between the Head and the Tail.
 //
 // returns an empty timeslice if the list is empty or if missing head or tail
-func (l DataList) TimeSlice() timeslice.TimeSlice {
-	var ts timeslice.TimeSlice
-
-	if l.Head != nil {
-		ts.From = l.Head.TimeStamp
-		if l.Tail != nil {
-			ts.To = l.Tail.TimeStamp.Add(l.Tail.Duration)
-		}
+func (dl DataList) TimeSlice() timeline.TimeSlice {
+	var ts timeline.TimeSlice
+	if dl.Tail != nil && dl.Head != nil {
+		ts.From = dl.Tail.TimeSlice.From
+		ts.To = dl.Head.TimeSlice.To
 	}
 	return ts
 }
 
-// DataRange returns the data boundaries of the DataList, scanning all datapoint between the Head and the Tail:
+// DataRange returns the data boundaries of the DataList, scanning all datapoint between the timeslice boundaries
 //
-//   - if maxSteps == 0 // the returned datarange doesn't have any stepzise.
-//   - if maxSteps > 0 // the returned datarange gets a stepzise and boudaries are rounded.
+//		ts == nil scan all data points between the Head and the Tail:
+//	 if maxSteps == 0 the returned datarange doesn't have any stepzise.
+//	 if maxSteps > 0 the returned datarange gets a stepzise and boudaries are rounded.
 //
 // returns an empty datarange if the list is empty or if missing head or tail.
-func (l DataList) DataRange(ts *timeslice.TimeSlice, maxSteps uint) (dr datarange.DataRange) {
+func (dl DataList) DataRange(ts *timeline.TimeSlice, maxSteps uint) (dr datarange.DataRange) {
 	var low, high float64
-	item := l.Head
+	item := dl.Tail
 	for item != nil {
-		if ts == nil || ((item.TimeStamp.Equal(ts.From) || item.TimeStamp.After(ts.From)) && (item.TimeStamp.Equal(ts.To) || item.TimeStamp.Before(ts.To))) {
+		if ts == nil || ((item.TimeSlice.From.Equal(ts.From) || item.TimeSlice.From.After(ts.From)) && (item.TimeSlice.To.Equal(ts.To) || item.TimeSlice.To.Before(ts.To))) {
 			if low == 0 || item.Low < low {
 				low = item.Low
 			}
@@ -84,6 +99,6 @@ func (l DataList) DataRange(ts *timeslice.TimeSlice, maxSteps uint) (dr datarang
 		item = item.Next
 	}
 
-	dr = datarange.Build(low, high, -float64(maxSteps), l.Unit)
+	dr = datarange.Make(low, high, -float64(maxSteps), dl.Name)
 	return dr
 }

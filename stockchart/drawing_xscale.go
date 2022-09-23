@@ -6,8 +6,8 @@ import (
 
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
-	"github.com/sunraylab/rgb/bootstrapcolor.go"
-	"github.com/sunraylab/timeline/timeslice"
+	"github.com/sunraylab/rgb/v2"
+	"github.com/sunraylab/timeline/v2"
 )
 
 type DrawingXScale struct {
@@ -15,54 +15,54 @@ type DrawingXScale struct {
 	fFullGrid bool // draw grids otherwise only labels
 }
 
-func NewDrawingXGrid(series *DataList, xrange *timeslice.TimeSlice, fFullGrid bool) *DrawingXScale {
+func NewDrawingXGrid(series *DataList, xrange *timeline.TimeSlice, fFullGrid bool) *DrawingXScale {
 	drawing := new(DrawingXScale)
 	drawing.Name = "xgrid"
 	drawing.fFullGrid = fFullGrid
 	drawing.series = series
 	drawing.xAxisRange = xrange
-	drawing.MainColor = bootstrapcolor.Gray
-	drawing.Drawing.OnRedraw = func(layer *drawingLayer) {
-		drawing.OnRedraw(layer)
+	drawing.MainColor = rgb.Gray
+	drawing.Drawing.OnRedraw = func() {
+		drawing.OnRedraw()
 	}
-	drawing.Drawing.OnChangeTimeSelection = func(layer *drawingLayer, timesel timeslice.TimeSlice) {
-		drawing.OnChangeTimeSelection(layer, timesel)
+	drawing.Drawing.OnChangeTimeSelection = func( timesel timeline.TimeSlice) {
+		drawing.OnChangeTimeSelection(timesel)
 	}
 	return drawing
 }
 
 // OnRedraw DrawingXGrid
-func (drawing DrawingXScale) OnRedraw(layer *drawingLayer) {
+func (drawing DrawingXScale) OnRedraw() {
 	if drawing.series == nil || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
 		log.Printf("OnRedraw %s fails: unable to proceed given data", drawing.Name)
 		return
 	}
 
 	// setup default text drawing properties
-	layer.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
-	layer.Ctx2D.SetTextBaseline(canvas.BottomCanvasTextBaseline)
-	layer.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
+	drawing.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
+	drawing.Ctx2D.SetTextBaseline(canvas.BottomCanvasTextBaseline)
+	drawing.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
 
 	// define the grid scale
 	const minxstepwidth = 100.0
-	maxscans := float64(layer.ClipArea.Width) / minxstepwidth
+	maxscans := float64(drawing.ClipArea.Width) / minxstepwidth
 	maskmain := drawing.xAxisRange.GetScanMask(uint(maxscans))
-	//fmt.Printf("layer %q, drawing %q, maskmain=%v\n", layer.layerId, drawing.Name, maskmain) // DEBUG:
+	//fmt.Printf("drawing %q, drawing %q, maskmain=%v\n", drawing.drawingId, drawing.Name, maskmain) // DEBUG:
 
 	// set fillstyle for the grid lines
-	gMainColor := drawing.MainColor.Alpha(0.4)
-	gSecondColor := drawing.MainColor.Lighten(0.5).Alpha(0.4)
+	gMainColor := drawing.MainColor.Opacify(0.4)
+	gSecondColor := drawing.MainColor.Lighten(0.5).Opacify(0.4)
 	gLabelColor := drawing.MainColor.Darken(0.5)
 	if !drawing.fFullGrid {
 		gMainColor = gSecondColor
 	}
 
 	// draw the second grid, before the main grid because it can overlay
-	if maskmain > timeslice.MASK_SHORTEST {
+	if maskmain > timeline.MASK_SHORTEST {
 
-		layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gSecondColor.Hexa())})
+		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gSecondColor.Hexa())})
 
-		fh := -float64(layer.ClipArea.Height)
+		fh := -float64(drawing.ClipArea.Height)
 		if !drawing.fFullGrid {
 			fh = -10.0
 		}
@@ -73,10 +73,10 @@ func (drawing DrawingXScale) OnRedraw(layer *drawingLayer) {
 
 			// calculate xpos. if the timeslice is a single date then draw a single bar at the middle
 			xtimerate := drawing.xAxisRange.Progress(xtime)
-			xpos := layer.ClipArea.O.X + int(float64(layer.ClipArea.Width)*xtimerate)
+			xpos := drawing.ClipArea.O.X + int(float64(drawing.ClipArea.Width)*xtimerate)
 
 			// draw the grid
-			layer.Ctx2D.FillRect(float64(xpos), float64(layer.ClipArea.O.Y+layer.ClipArea.Height), 1.0, fh)
+			drawing.Ctx2D.FillRect(float64(xpos), float64(drawing.ClipArea.O.Y+drawing.ClipArea.Height), 1.0, fh)
 		}
 	}
 
@@ -87,20 +87,20 @@ func (drawing DrawingXScale) OnRedraw(layer *drawingLayer) {
 
 		// calculate xpos. if the timeslice is a single date then draw a single bar at the middle
 		xtimerate := drawing.xAxisRange.Progress(xtime)
-		xpos := layer.ClipArea.O.X + int(float64(layer.ClipArea.Width)*xtimerate)
+		xpos := drawing.ClipArea.O.X + int(float64(drawing.ClipArea.Width)*xtimerate)
 
 		// draw the main grid line
-		layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gMainColor.Hexa())})
-		layer.Ctx2D.FillRect(float64(xpos), float64(layer.ClipArea.O.Y+layer.ClipArea.Height), 1.0, -float64(layer.ClipArea.Height))
+		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gMainColor.Hexa())})
+		drawing.Ctx2D.FillRect(float64(xpos), float64(drawing.ClipArea.O.Y+drawing.ClipArea.Height), 1.0, -float64(drawing.ClipArea.Height))
 		//fmt.Printf("xaxis xpos:%v\n", xpos) // DEBUG:
 
 		// draw time label if not overlapping last label
 		if (xpos + 2) > lastlabelend {
 			strdtefmt := maskmain.GetTimeFormat(xtime, lastxtime)
 			label := xtime.Format(strdtefmt)
-			layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gLabelColor.Hexa())})
-			layer.Ctx2D.FillText(label, float64(xpos+2), float64(layer.ClipArea.End().Y)-1, nil)
-			lastlabelend = xpos + 2 + int(layer.Ctx2D.MeasureText(label).Width())
+			drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gLabelColor.Hexa())})
+			drawing.Ctx2D.FillText(label, float64(xpos+2), float64(drawing.ClipArea.End().Y)-1, nil)
+			lastlabelend = xpos + 2 + int(drawing.Ctx2D.MeasureText(label).Width())
 		}
 
 		// scan next
@@ -109,7 +109,7 @@ func (drawing DrawingXScale) OnRedraw(layer *drawingLayer) {
 }
 
 // OnChangeTimeSelection
-func (pdrawing *DrawingXScale) OnChangeTimeSelection(layer *drawingLayer, timesel timeslice.TimeSlice) {
+func (pdrawing *DrawingXScale) OnChangeTimeSelection( timesel timeline.TimeSlice) {
 	*pdrawing.xAxisRange = timesel
-	pdrawing.OnRedraw(layer)
+	pdrawing.OnRedraw()
 }

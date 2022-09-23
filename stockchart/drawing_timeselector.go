@@ -8,78 +8,83 @@ import (
 	"github.com/gowebapi/webapi/css/typedom"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/gowebapi/webapi/html/htmlevent"
-
-	"github.com/sunraylab/rgb/bootstrapcolor.go"
-	"github.com/sunraylab/timeline/timeslice"
+	"github.com/sunraylab/rgb/v2/bootstrapcolor.go"
+	"github.com/sunraylab/timeline/v2"
 )
 
 type DrawingTimeSelector struct {
 	Drawing
 
-	fromButton               Rect
-	toButton                 Rect
-	resizeCursor             bool
+	buttonFrom               Rect // coordinates of the button within the cliparea
+	buttonTo                 Rect // coordinates of the button within the cliparea
+	isResizeCursor           bool // is the cursor resize ?
 	dragFrom, dragTo, dragIn bool
-	timeSelection            timeslice.TimeSlice
+
+	timeSelection timeline.TimeSlice
+
+	MinZoomTime time.Duration // minute by defailt, can be changed
 }
 
 // Drawing factory
-func NewDrawingTimeSelector(series *DataList, xrange *timeslice.TimeSlice) *DrawingTimeSelector {
+func NewDrawingTimeSelector(series *DataList, xrange *timeline.TimeSlice) *DrawingTimeSelector {
 	drawing := new(DrawingTimeSelector)
 	drawing.Name = "timeselector"
 	drawing.series = series
 	drawing.xAxisRange = xrange
 	drawing.timeSelection = *xrange
-	drawing.MainColor = *bootstrapcolor.Blue.Lighten(0.5)
-	drawing.fromButton.Width = 8
-	drawing.fromButton.Height = 30
-	drawing.toButton.Width = 8
-	drawing.toButton.Height = 30
-	drawing.Drawing.OnRedraw = func(layer *drawingLayer) {
-		drawing.OnRedraw(layer)
+	drawing.MainColor = bootstrapcolor.Blue.Lighten(0.5)
+
+	drawing.buttonFrom.Width = 8
+	drawing.buttonFrom.Height = 30
+	drawing.buttonTo.Width = 8
+	drawing.buttonTo.Height = 30
+	drawing.MinZoomTime = time.Minute
+
+	drawing.Drawing.OnRedraw = func() {
+		drawing.OnRedraw()
 	}
-	drawing.Drawing.OnMouseDown = func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) {
-		drawing.OnMouseDown(layer, xy, event)
+	drawing.Drawing.OnMouseDown = func(xy Point, event *htmlevent.MouseEvent) {
+		drawing.OnMouseDown(xy, event)
 	}
-	drawing.Drawing.OnMouseUp = func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) (timesel *timeslice.TimeSlice) {
-		return drawing.OnMouseUp(layer, xy, event)
+	drawing.Drawing.OnMouseUp = func(xy Point, event *htmlevent.MouseEvent) (timesel *timeline.TimeSlice) {
+		return drawing.OnMouseUp(xy, event)
 	}
-	drawing.Drawing.OnMouseMove = func(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) {
-		drawing.OnMouseMove(layer, xy, event)
+	drawing.Drawing.OnMouseMove = func(xy Point, event *htmlevent.MouseEvent) {
+		drawing.OnMouseMove(xy, event)
 	}
-	drawing.Drawing.OnWheel = func(layer *drawingLayer, event *htmlevent.WheelEvent) (timesel *timeslice.TimeSlice) {
-		return drawing.OnWheel(layer, event)
+	drawing.Drawing.OnWheel = func(event *htmlevent.WheelEvent) (timesel *timeline.TimeSlice) {
+		return drawing.OnWheel(event)
 	}
 	return drawing
 }
 
 // OnRedrawTimeSelector draws the timeslice selector on top of the navbar.
 // Buttons's position are updated to make it easy to catch them during a mouse event.
-func (drawing *DrawingTimeSelector) OnRedraw(layer *drawingLayer) {
+func (drawing *DrawingTimeSelector) OnRedraw() {
 	if drawing.series == nil || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
 		log.Printf("OnRedraw %s fails: unable to proceed given data", drawing.Name)
 		return
 	}
 	// get the y center for redrawing the buttons
-	ycenter := float64(layer.ClipArea.O.Y) + float64(layer.ClipArea.Height)/2.0
+	ycenter := float64(drawing.ClipArea.O.Y) + float64(drawing.ClipArea.Height)/2.0
 
 	// draw the left selector
 	xleftrate := drawing.xAxisRange.Progress(drawing.timeSelection.From)
-	xposleft := float64(layer.ClipArea.O.X) + float64(layer.ClipArea.Width)*xleftrate
-	layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Alpha(0.4).Hexa())})
-	layer.Ctx2D.FillRect(float64(layer.ClipArea.O.X), float64(layer.ClipArea.O.Y), xposleft, float64(layer.ClipArea.Height))
-	moveButton(layer, &drawing.fromButton, xposleft, ycenter)
+	xposleft := float64(drawing.ClipArea.O.X) + float64(drawing.ClipArea.Width)*xleftrate
+	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Opacify(0.4).Hexa())})
+	drawing.Ctx2D.FillRect(float64(drawing.ClipArea.O.X), float64(drawing.ClipArea.O.Y), xposleft, float64(drawing.ClipArea.Height))
+	moveButton(drawing, &drawing.buttonFrom, xposleft, ycenter)
 
 	// draw the right selector
 	xrightrate := drawing.xAxisRange.Progress(drawing.timeSelection.To)
-	xposright := float64(layer.ClipArea.O.X) + float64(layer.ClipArea.Width)*xrightrate
-	layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Alpha(0.4).Hexa())})
-	layer.Ctx2D.FillRect(xposright, float64(layer.ClipArea.O.Y), float64(layer.ClipArea.Width)-xposright, float64(layer.ClipArea.Height))
-	moveButton(layer, &drawing.toButton, xposright, ycenter)
+	xposright := float64(drawing.ClipArea.O.X) + float64(drawing.ClipArea.Width)*xrightrate
+	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Opacify(0.4).Hexa())})
+	drawing.Ctx2D.FillRect(xposright, float64(drawing.ClipArea.O.Y), float64(drawing.ClipArea.Width)-xposright, float64(drawing.ClipArea.Height))
+	moveButton(drawing, &drawing.buttonTo, xposright, ycenter)
 }
 
 // moveButton utility
-func moveButton(layer *drawingLayer, button *Rect, xcenter float64, ycenter float64) {
+func moveButton(layer *DrawingTimeSelector, button *Rect, xcenter float64, ycenter float64) {
 	layer.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Hexa())})
 	layer.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(bootstrapcolor.Gray.Hexa())})
 	layer.Ctx2D.SetLineWidth(1)
@@ -92,7 +97,7 @@ func moveButton(layer *drawingLayer, button *Rect, xcenter float64, ycenter floa
 }
 
 // OnMouseDown starts dragging buttons
-func (drawing *DrawingTimeSelector) OnMouseDown(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) {
+func (drawing *DrawingTimeSelector) OnMouseDown(xy Point, event *htmlevent.MouseEvent) {
 	//fmt.Printf("%q mousedown xy:%v, frombutton:%v, tobutton:%v\n", drawing.Name, xy, drawing.fromButton, drawing.toButton) //DEBUG:
 
 	// if already dragging and reenter into the canvas
@@ -103,21 +108,21 @@ func (drawing *DrawingTimeSelector) OnMouseDown(layer *drawingLayer, xy Point, e
 	}
 
 	// do someting only if we're on a button
-	if xy.IsIn(drawing.fromButton) {
+	if xy.IsIn(drawing.buttonFrom) {
 		drawing.dragFrom = true
 		drawing.xStartDrag = drawing.timeSelection
-	} else if xy.IsIn(drawing.toButton) {
+	} else if xy.IsIn(drawing.buttonTo) {
 		drawing.dragTo = true
 		drawing.xStartDrag = drawing.timeSelection
 	}
 }
 
 // OnMouseUp returns the updated timeslice selected after moving buttons
-func (drawing *DrawingTimeSelector) OnMouseUp(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) (timesel *timeslice.TimeSlice) {
+func (drawing *DrawingTimeSelector) OnMouseUp(xy Point, event *htmlevent.MouseEvent) (timesel *timeline.TimeSlice) {
 	//fmt.Printf("%q mouseup xy:%v\n", drawing.Name, xy) //DEBUG:
 
 	if (drawing.dragFrom || drawing.dragTo) && (drawing.dragIn || drawing.xStartDrag.Equal(drawing.timeSelection) == 0) {
-		timesel = new(timeslice.TimeSlice)
+		timesel = new(timeline.TimeSlice)
 		*timesel = drawing.timeSelection
 	}
 	drawing.dragFrom = false
@@ -126,7 +131,7 @@ func (drawing *DrawingTimeSelector) OnMouseUp(layer *drawingLayer, xy Point, eve
 }
 
 // OnMouseMove change the cursor when hovering a button, or change the timeslice selection if dragging the buttons
-func (drawing *DrawingTimeSelector) OnMouseMove(layer *drawingLayer, xy Point, event *htmlevent.MouseEvent) {
+func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.MouseEvent) {
 	//fmt.Printf("%q mousemove xy:%v\n", pdrawing.Name xy) //DEBUG:
 	if drawing.xAxisRange == nil {
 		log.Printf("OnMouseMove %q fails: missing data", drawing.Name)
@@ -134,40 +139,38 @@ func (drawing *DrawingTimeSelector) OnMouseMove(layer *drawingLayer, xy Point, e
 	}
 
 	// change cursor if we start overing a button
-	if (xy.IsIn(drawing.fromButton) || xy.IsIn(drawing.toButton)) && !drawing.resizeCursor {
-		layer.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`col-resize`)})
-		drawing.resizeCursor = true
+	if (xy.IsIn(drawing.buttonFrom) || xy.IsIn(drawing.buttonTo)) && !drawing.isResizeCursor {
+		drawing.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`col-resize`)})
+		drawing.isResizeCursor = true
 	}
 
 	// change cursor if we leave a button
-	if (!xy.IsIn(drawing.fromButton) && !xy.IsIn(drawing.toButton)) && drawing.resizeCursor {
-		layer.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`auto`)})
-		drawing.resizeCursor = false
+	if (!xy.IsIn(drawing.buttonFrom) && !xy.IsIn(drawing.buttonTo)) && drawing.isResizeCursor {
+		drawing.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`auto`)})
+		drawing.isResizeCursor = false
 	}
 
 	// change the selector
 	if drawing.dragFrom {
-		rate := layer.ClipArea.XRate(xy.X)
+		rate := drawing.ClipArea.XRate(xy.X)
 		postime := drawing.xAxisRange.WhatTime(rate)
-		// HACK: cap flag not working!
-		if postime.Before(drawing.timeSelection.To) {
-			drawing.timeSelection.MoveFrom(postime, true)
-			layer.Redraw()
+		if postime.Before(drawing.timeSelection.To.Add(-drawing.MinZoomTime)) {
+			drawing.timeSelection.FromMove(postime, true)
+			drawing.Redraw()
 		}
 
 	} else if drawing.dragTo {
-		rate := layer.ClipArea.XRate(xy.X)
+		rate := drawing.ClipArea.XRate(xy.X)
 		postime := drawing.xAxisRange.WhatTime(rate)
-		// HACK: cap flag not working!
-		if postime.After(drawing.timeSelection.From) {
-			drawing.timeSelection.MoveTo(postime, true)
-			layer.Redraw()
+		if postime.After(drawing.timeSelection.From.Add(drawing.MinZoomTime)) {
+			drawing.timeSelection.ToMove(postime, true)
+			drawing.Redraw()
 		}
 	}
 }
 
 // OnWheel manage zoom and shifting the time selection
-func (drawing *DrawingTimeSelector) OnWheel(layer *drawingLayer, event *htmlevent.WheelEvent) (timesel *timeslice.TimeSlice) {
+func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) (timesel *timeline.TimeSlice) {
 	if drawing.series == nil || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
 		return
 	}
@@ -179,9 +182,8 @@ func (drawing *DrawingTimeSelector) OnWheel(layer *drawingLayer, event *htmleven
 
 	// get the wheel move
 	dy := event.DeltaY()
-
-	// move the selection
 	if event.ShiftKey() {
+		// move mode: shift the selection
 		if dy < 0 {
 			// move to the future
 			d := drawing.timeSelection.Duration()
@@ -190,6 +192,9 @@ func (drawing *DrawingTimeSelector) OnWheel(layer *drawingLayer, event *htmleven
 			if drawing.timeSelection.To.After(drawing.xAxisRange.To) {
 				drawing.timeSelection.To = drawing.xAxisRange.To
 				drawing.timeSelection.From = drawing.timeSelection.To.Add(-time.Duration(*d))
+			}
+			if drawing.timeSelection.From.After(drawing.series.Head.From) {
+				drawing.timeSelection.From = drawing.series.Head.From
 			}
 		} else if dy > 0 {
 			// move to the past
@@ -201,18 +206,20 @@ func (drawing *DrawingTimeSelector) OnWheel(layer *drawingLayer, event *htmleven
 				drawing.timeSelection.To = drawing.timeSelection.From.Add(time.Duration(*d))
 			}
 		}
-	} else { // zoom, moving the from date only
+	} else {
+		// zoom mode: move the 'From' time only
 		if dy > 0 {
-			// reduce the timeslice, but no more than the drawing.timeSelection.To duration
-			at := drawing.series.GetAt(drawing.timeSelection.To)
-			mind := at.Duration
-			drawing.timeSelection.From = drawing.timeSelection.From.Add(timeStep)
+			// zoom+ > reduce the timeslice, but no more than the drawing.timeSelection.To duration
 			//fmt.Printf("zoom- mind=%s, at:%s, timeStep=%v\n", mind, at, timeStep) // DEBUG:
-			if drawing.timeSelection.From.Add(mind).After(drawing.timeSelection.To) {
-				drawing.timeSelection.From = at.TimeStamp
+			drawing.timeSelection.From = drawing.timeSelection.From.Add(timeStep)
+			if drawing.timeSelection.From.Add(drawing.MinZoomTime).After(drawing.timeSelection.To) {
+				drawing.timeSelection.From = drawing.timeSelection.To.Add(-drawing.MinZoomTime)
+			}
+			if drawing.timeSelection.From.After(drawing.series.Head.From) {
+				drawing.timeSelection.From = drawing.series.Head.From
 			}
 		} else if dy < 0 {
-			// enlarge the timeslice
+			// zoom- > enlarge the timeslice
 			//fmt.Printf("zoom+ timeStep=%v\n", timeStep) // DEBUG:
 			drawing.timeSelection.From = drawing.timeSelection.From.Add(-timeStep)
 			if drawing.timeSelection.From.Before(drawing.xAxisRange.From) {
@@ -223,10 +230,10 @@ func (drawing *DrawingTimeSelector) OnWheel(layer *drawingLayer, event *htmleven
 
 	// redraw only if the time Selection has changed
 	if currentSel.Equal(drawing.timeSelection) == 0 {
-		timesel = new(timeslice.TimeSlice)
+		timesel = new(timeline.TimeSlice)
 		*timesel = drawing.timeSelection
-		layer.Clear()
-		drawing.OnRedraw(layer)
+		drawing.Clear()
+		drawing.OnRedraw()
 	}
 	return timesel
 }
