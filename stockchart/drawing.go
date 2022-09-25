@@ -7,7 +7,6 @@ import (
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/gowebapi/webapi/html/htmlevent"
 	"github.com/sunraylab/rgb/v2"
-	"github.com/sunraylab/timeline/v2"
 )
 
 // Drawing provides primitives
@@ -16,21 +15,19 @@ type Drawing struct {
 	BackgroundColor rgb.Color // optional, fully transparent by default
 	MainColor       rgb.Color // optional, fully transparent by default
 
-	*drawingLayer                     // the parent layer
-	series        *DataList           // the series of data to draw
-	xAxisRange    *timeline.TimeSlice // the timeslice to show and draw
-	xStartDrag    timeline.TimeSlice  // drag and drop data that can be used by mouse events
+	*Layer                        // the parent layer
+	series     *DataList          // the series of data to draw
 
 	OnRedraw func()
 
 	// optional functions to be defined by upper drawings
-	OnMouseDown           func(xy Point, event *htmlevent.MouseEvent)
-	OnMouseUp             func(xy Point, event *htmlevent.MouseEvent) (timesel *timeline.TimeSlice)
-	OnMouseMove           func(xy Point, event *htmlevent.MouseEvent)
-	OnMouseEnter          func(xy Point, event *htmlevent.MouseEvent)
-	OnMouseLeave          func(xy Point, event *htmlevent.MouseEvent)
-	OnChangeTimeSelection func(timesel timeline.TimeSlice)
-	OnWheel               func(event *htmlevent.WheelEvent) (timesel *timeline.TimeSlice)
+	OnMouseDown  func(xy Point, event *htmlevent.MouseEvent)
+	OnMouseUp    func(xy Point, event *htmlevent.MouseEvent)
+	OnMouseMove  func(xy Point, event *htmlevent.MouseEvent)
+	OnMouseEnter func(xy Point, event *htmlevent.MouseEvent)
+	OnMouseLeave func(xy Point, event *htmlevent.MouseEvent)
+	OnWheel      func(event *htmlevent.WheelEvent)
+	NeedRedraw   func() bool
 }
 
 func (drawing Drawing) String() string {
@@ -54,8 +51,8 @@ const (
 
 // DrawTextBox
 //
-// xy position is defined in a canvas coordinates and corresponds to the corner defined by align,
-// outside the border, the margin and the padding
+// xy position is defined in a canvas coordinates and corresponds to the corner defined
+// by align, the border, the margin and the padding
 //
 // Font must be set before
 func (drawing *Drawing) DrawTextBox(txt string, xy Point, align Align, color rgb.Color, margin int, border int, padding int) {

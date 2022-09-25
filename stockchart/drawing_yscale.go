@@ -8,26 +8,26 @@ import (
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/datarange"
 	"github.com/sunraylab/rgb/v2"
-	"github.com/sunraylab/timeline/v2"
 )
 
 type DrawingYGrid struct {
 	Drawing
-	fScale bool // Draw the scale, otherwise only the lines
+	fScale     bool // Draw the scale, otherwise only the lines
+	lastyrange datarange.DataRange
 }
 
-func NewDrawingYGrid(series *DataList, xrange *timeline.TimeSlice, fscale bool) *DrawingYGrid {
+func NewDrawingYGrid(series *DataList, fscale bool) *DrawingYGrid {
 	drawing := new(DrawingYGrid)
 	drawing.Name = "yscale"
 	drawing.series = series
-	drawing.xAxisRange = xrange
 	drawing.MainColor = rgb.Gray.Lighten(0.85)
 	drawing.fScale = fscale
 	drawing.Drawing.OnRedraw = func() {
 		drawing.OnRedraw()
 	}
-	drawing.Drawing.OnChangeTimeSelection = func(timesel timeline.TimeSlice) {
-		drawing.OnChangeTimeSelection(timesel)
+	drawing.Drawing.NeedRedraw = func() bool {
+		ynewrange := drawing.series.DataRange(drawing.xAxisRange, 10)
+		return !ynewrange.Equal(drawing.lastyrange)
 	}
 	return drawing
 }
@@ -50,13 +50,13 @@ func (drawing *DrawingYGrid) OnRedraw() {
 	clipArea.Height -= 15
 
 	// draw the Y Scale
-	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
+	drawing.lastyrange = drawing.series.DataRange(drawing.xAxisRange, 10)
 	//fmt.Printf("DataRange %v\n", yrange) //DEBUG:
 
-	for val := yrange.High(); val >= yrange.Low() && yrange.StepSize() > 0; val -= yrange.StepSize() {
+	for val := drawing.lastyrange.High(); val >= drawing.lastyrange.Low() && drawing.lastyrange.StepSize() > 0; val -= drawing.lastyrange.StepSize() {
 
 		// calculate ypos
-		yrate := yrange.Progress(val)
+		yrate := drawing.lastyrange.Progress(val)
 		ypos := float64(clipArea.End().Y) - yrate*float64(clipArea.Height)
 		ypos = float64(clipArea.BoundY(int(ypos)))
 
@@ -70,15 +70,9 @@ func (drawing *DrawingYGrid) OnRedraw() {
 
 		// draw yscale label
 		if drawing.fScale {
-			strvalue := datarange.FormatData(val, yrange.StepSize()) // fmt.Sprintf("%.1f", val)
+			strvalue := datarange.FormatData(val, drawing.lastyrange.StepSize()) // fmt.Sprintf("%.1f", val)
 			drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(rgb.Gray.Darken(0.5).Hexa())})
 			drawing.Ctx2D.FillText(strvalue, float64(clipArea.O.Y+7), ypos+1, nil)
 		}
 	}
-}
-
-// OnChangeTimeSelection
-func (pdrawing *DrawingYGrid) OnChangeTimeSelection(timesel timeline.TimeSlice) {
-	*pdrawing.xAxisRange = timesel
-	pdrawing.OnRedraw()
 }

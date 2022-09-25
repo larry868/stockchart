@@ -1,6 +1,6 @@
 {
     "liveServer.settings.port": 5510,
-    "liveServer.settings.root": "/example/webapp/",
+    "liveServer.settings.root": "/examples/web/",
     "liveServer.settings.AdvanceCustomBrowserCmdLine": "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe --remote-debugging-port=9222",
     "liveServer.settings.NoBrowser": false,
     "liveServer.settings.fullReload": true,

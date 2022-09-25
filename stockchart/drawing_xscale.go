@@ -15,18 +15,17 @@ type DrawingXScale struct {
 	fFullGrid bool // draw grids otherwise only labels
 }
 
-func NewDrawingXGrid(series *DataList, xrange *timeline.TimeSlice, fFullGrid bool) *DrawingXScale {
+func NewDrawingXGrid(series *DataList, fFullGrid bool, timeSelDependant bool) *DrawingXScale {
 	drawing := new(DrawingXScale)
 	drawing.Name = "xgrid"
 	drawing.fFullGrid = fFullGrid
 	drawing.series = series
-	drawing.xAxisRange = xrange
 	drawing.MainColor = rgb.Gray
 	drawing.Drawing.OnRedraw = func() {
 		drawing.OnRedraw()
 	}
-	drawing.Drawing.OnChangeTimeSelection = func( timesel timeline.TimeSlice) {
-		drawing.OnChangeTimeSelection(timesel)
+	drawing.Drawing.NeedRedraw = func() bool {
+		return timeSelDependant
 	}
 	return drawing
 }
@@ -106,10 +105,4 @@ func (drawing DrawingXScale) OnRedraw() {
 		// scan next
 		lastxtime = xtime
 	}
-}
-
-// OnChangeTimeSelection
-func (pdrawing *DrawingXScale) OnChangeTimeSelection( timesel timeline.TimeSlice) {
-	*pdrawing.xAxisRange = timesel
-	pdrawing.OnRedraw()
 }

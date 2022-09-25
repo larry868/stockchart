@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sunraylab/gowebstockchart/stockchart"
 	"github.com/sunraylab/rgb/v2"
+	"github.com/sunraylab/stockchart/stockchart"
 )
 
 // the main func is required by the GOOS=js GOARCH=wasm go builder
@@ -18,7 +18,7 @@ func main() {
 	// build  random dataset for the demo
 	dataset := BuildRandomDataset()
 
-	// build a new chart
+	// Create a new chart
 	_, err := stockchart.NewStockChart("mychart", rgb.Gray.Lighten(0.8), dataset)
 	if err != nil {
 		fmt.Println(err.Error())

@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/sunraylab/gowebstockchart/stockchart"
+	"github.com/sunraylab/stockchart/stockchart"
 	"github.com/sunraylab/timeline/v2"
 )
 
@@ -38,7 +38,7 @@ func BuildRandomDataset() *stockchart.DataList {
 		p.Volume = r1.Float64() * 1000000.0
 
 		// set time
-		p.TimeSlice = timeline.MakeTimeslice(last, candleDuration)
+		p.TimeSlice = timeline.MakeTimeSlice(last, candleDuration)
 
 		// skip a data point for the sample
 		if i != 10 {

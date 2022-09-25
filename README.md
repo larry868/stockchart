@@ -1,51 +1,77 @@
-# gowebstockchart
+# stockchart
 
-HTML5 stock chart module in go 
+HTML5 stock chart package in go.
 
-Generate interactive, responsive, and perfomant chart with HTML5 canvas and web assembly, and embed it into any HTML pages. 
+Generate interactive, responsive, and performant chart with HTML5 canvas and web assembly.
 
-![snapshot](doc/snapshot.png)
+The chart can be embedded into any HTML pages. 
 
-## features
+![snapshot](snapshot.png)
 
-- draw candlestick with OHLC series
+See the [example](https://github.com/sunraylab/stockchart/tree/master/examples).
+
+# Features
+- draw candlestick with OHLCV series
 - X time axis navigator
 - X time axis with auto scale and autolabelling
-- zoom-in and zoom-out with the mouse wheel inside the navbar
-- shift left and right with Shift-Key and the mouse wheel inside the navbar
-- Y value axis, with auto scale and auto labelling
-- responsive: handle resize event, and browser zoom
-- embedding chart with a single <stockchart> HTML elemnt
+- zoom-in and zoom-out with the mouse wheel
+- shift selection with the Shift-Key and the mouse wheel
+- Y value axis with auto scale and auto labelling
+- responsive: handle resize event and browser zoom
+- embedding chart with a single HTML elemnt
 
-## characteristics
+# Characteristics
 
-- fast drawing on any browser accepting HTML5 canvas & Webassembly
+- drawing on any browser accepting [HTML5 canvas](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas) & Webassembly
 - only GO, no JS
+- Written in go 1.19
 
-## Runing the example
+## How to use it
 
-The example folder provides a webserver example embedding an interactive gowebstockchart.
+You need to add a `<stockchart>` element in your HTML page, specifying a unique chart ID like:
 
-The file structure is the followwing one
-```
-example/
-+- wasm/            
- - dataset.go      a simgle function to build the dataset for the example
- - main.go         source code of the wasm code to be built to be loaded by the browser
-+- webapp/          
- - index.html      static html file of this example
- - main.wasm       compiled version of the code to be loaded by the browser
- - myapp.js        a minimal and required js code to be loaded by your web pages, to be customized
- - wasm_exec.js    provided by go, see here after
-+- webserver
- - main.go         an optional simple webserver serving static files located in webapp, see here after
+```html
+<stockchart id="mychart" style="height:450px; width:100%; display: block;"></stockchart>
 ```
 
-## Technicals
+Than in tha main function of your wasm code, your need to feed a data set
 
-Written in go 1.19
+```go
+	// build your dataset 
+	dataset := BuildRandomDataset()
+```
 
-The Web Assembly code generated is based on the [webapi package](https://github.com/gowebapi/webapi).
+and to pass it to the StockChart factory
+
+```go
+	// Create a new chart
+	_, err := stockchart.NewStockChart("mychart", rgb.White, myDataset)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+```
+
+That's it!
+
+## How it works
+
+We've used HTLM5 ``<canvas>`` providing the APIs to draw in a 2D context. 
+
+The stockchart struct provides the chart factory: 
+- default chart builder, adding canvas to the DOM
+- handles the resize event and coordinate calculations
+- dispatch events, such as mouse events or time selection changes, to the layers and their drawings
+
+To avoid to redraw everythings everytime a user hover the graph or change the time selection we've used the layering technics.
+Every layer is a canvas. Canvas are transparent by default also you can stack them and redraw on one canvas keeping the drawing on the other one intact.
+
+The drawingLayer struct handle the layout of the layer and embed a stack of drawings.
+
+Overall drawing is breakdown in multiple functionnal drawings, each one added to one or many layers. 
+Functionnal drawings are based on the drawing stuct providing some drawing primitives and embedding the series of data to draw.
+
+![layers and modules](layersndrawings.png)
 
 ### Use Web Assembly with go
 
@@ -55,10 +81,15 @@ Go provides a specific js file called `wasm_exec.js` that need to be served by y
 
 ## Change log
 
-- v0.1.0 alpha: contains lines commented with `// DEBUG:` for debug purpose only
-- v0.2.0 alpha: 
-  - X time axis cursor position in the graph area
-- v0.2.1 alpha: 
-  - better management of datalist, handle missing datapoints
-- v0.3.0 alpha:
-  - major refactoring
+- v0.4.0 alpha: improved management of time selection + renaming the package
+- v0.3.0 alpha: major refactoring
+- v0.2.1 alpha: improved management of datalist
+- v0.2.0 alpha: X time axis cursor position in the graph area
+- v0.1.0 alpha: 1st try
+
+Code may contains lines commented with `// DEBUG:` for debug purpose only.
+
+## References
+
+- The Web Assembly code generated is based on the [webapi package](https://github.com/gowebapi/webapi).
+- [Browsers running web assembly](https://developer.mozilla.org/en-US/docs/WebAssembly#browser_compatibility)

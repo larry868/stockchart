@@ -17,17 +17,16 @@ type DrawingCandles struct {
 }
 
 // Drawing factory
-func NewDrawingCandles(series *DataList, xrange *timeline.TimeSlice) *DrawingCandles {
+func NewDrawingCandles(series *DataList) *DrawingCandles {
 	drawing := new(DrawingCandles)
 	drawing.Name = "candles"
 	drawing.series = series
-	drawing.xAxisRange = xrange
 	drawing.MainColor = rgb.Black.Lighten(0.5)
 	drawing.Drawing.OnRedraw = func() {
 		drawing.OnRedraw()
 	}
-	drawing.Drawing.OnChangeTimeSelection = func(timesel timeline.TimeSlice) {
-		drawing.OnChangeTimeSelection(timesel)
+	drawing.Drawing.NeedRedraw = func() bool {
+		return true
 	}
 	return drawing
 }
@@ -153,11 +152,4 @@ func (drawing DrawingCandles) OnRedraw() {
 	drawing.Ctx2D.SetFont(`14px 'Roboto', sans-serif`)
 	drawing.DrawTextBox(drawing.series.Name, Point{X: 0, Y: 0}, AlignStart|AlignTop, drawing.MainColor, 3, 0, 2)
 
-}
-
-// OnChangeTimeSelection reset the xAxisRange and redraw all.
-// The layer should have been cleared before.
-func (drawing *DrawingCandles) OnChangeTimeSelection(timesel timeline.TimeSlice) {
-	*drawing.xAxisRange = timesel
-	drawing.OnRedraw()
 }

@@ -14,127 +14,142 @@ import (
 	"github.com/sunraylab/timeline/v2"
 )
 
-type layerArea int
+type layoutT int
 
 const (
-	lAREA_FULL layerArea = iota
+	lAREA_FULL layoutT = iota
 	lAREA_GRAPH
 	lAREA_YSCALE
 	lAREA_NAVBAR
 )
 
-// A drawingLayer correspond to a single canvas with an html5 2D drawing context
-// embedding one or many drawings
-type drawingLayer struct {
-	Name     string
+// A Layer correspond to a single canvas with an html5 2D drawing context.
+// It's embedding a stack of drawings.
+type Layer struct {
 	ClipArea Rect
 	Ctx2D    *canvas.CanvasRenderingContext2D
 
-	canvasE  *canvas.HTMLCanvasElement
-	layout   layerArea
-	drawings []*Drawing //TimeSeriesDrawer
+	id      string                   // the id of the layer, for debugging purpose
+	chart   *StockChart              // the parent chart
+	canvasE canvas.HTMLCanvasElement // the <canvas> element of this layer
+	layout  layoutT                  // The layout of this layer within the chart
+
+	xAxisRange *timeline.TimeSlice // the timeslice to show and draw on this layer
+	drawings   []*Drawing          // stack of drawings
 }
 
-func (layer *drawingLayer) AddDrawing(d *Drawing, bgcolor rgb.Color) {
-	d.drawingLayer = layer
+// AddDrawing add a new drawing to the stack of drawings appearing on this layer.
+//
+// The bgcolor is only used by the drawing.
+func (layer *Layer) AddDrawing(d *Drawing, bgcolor rgb.Color) {
+	d.Layer = layer
 	d.BackgroundColor = bgcolor
 	layer.drawings = append(layer.drawings, d)
 }
 
-func (layer drawingLayer) String() string {
-	str := fmt.Sprintf("%q canvasE:%p, ctx2D:%p area:{%v} nb drawings:%d", layer.Name, layer.canvasE, layer.Ctx2D, layer.ClipArea, len(layer.drawings))
+// Default string interface
+func (layer Layer) String() string {
+	str := fmt.Sprintf("%q canvasE:%p, ctx2D:%p area:{%v} nb drawings:%d", layer.id, &layer.canvasE, layer.Ctx2D, layer.ClipArea, len(layer.drawings))
 	return str
 }
 
-func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
+// SetEventDispatcher activates mouse event handler on the canvas of the layer.
+// When setup, if the mouse is located in the cliparea of the layer,
+// the event is propagated to all drawings having defined their own MouseEvent func.
+//
+// Usually SetEventDispatcher is called by the chart factory.
+func (layer *Layer) SetEventDispatcher() {
+
+	// update changed time selection
+	var oldtimesel timeline.TimeSlice
+	processTimeSelection := func() {
+		if oldtimesel.Compare(layer.chart.timeSelection) == timeline.DIFFERENT {
+			layer.chart.DoChangeTimeSelection()
+		}
+	}
 
 	// Define functions to capture mouse events on this layer,
 	// only if the layer contains at least one mouse function on its drawings
-	hme := layer.HandledMouseEvents()
-	fmt.Printf("layer %q, mouse event handled=%08b\n", layer.Name, hme) // DEBUG:
+	hme := layer.HandledEvents()
+	//fmt.Printf("layer %q, mouse event handled=%08b\n", layer.id, hme) // DEBUG:
 	if (hme & evt_MouseDown) != 0 {
 		layer.canvasE.SetOnMouseDown(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
-			xy := getMousePos(event)
+			xy := getMouseXY(event)
 			if xy.IsIn(layer.ClipArea) {
+				oldtimesel = layer.chart.timeSelection
 				for _, drawing := range layer.drawings {
 					if drawing.OnMouseDown != nil {
 						drawing.OnMouseDown(xy, event)
 					}
 				}
+				processTimeSelection()
 			}
 		})
 	}
 
 	if (hme & evt_MouseUp) != 0 {
 		layer.canvasE.SetOnMouseUp(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
-			xy := getMousePos(event)
-			var timesel *timeline.TimeSlice
+			xy := getMouseXY(event)
+			oldtimesel = layer.chart.timeSelection
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseUp != nil {
-					tsel := drawing.OnMouseUp(xy, event)
-					if tsel != nil {
-						timesel = tsel
-					}
+					drawing.OnMouseUp(xy, event)
 				}
 			}
-			// propagate change in time selection to all layers and all drawings
-			if timesel != nil {
-				pchart.ChangeTimeSelection(*timesel)
-			}
+			processTimeSelection()
 		})
 	}
 
 	if (hme & evt_MouseMove) != 0 {
 		layer.canvasE.SetOnMouseMove(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
-			xy := getMousePos(event)
+			xy := getMouseXY(event)
+			oldtimesel = layer.chart.timeSelection
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseMove != nil {
 					drawing.OnMouseMove(xy, event)
 				}
 			}
+			processTimeSelection()
 		})
 	}
 
 	if (hme & evt_MouseEnter) != 0 {
 		layer.canvasE.SetOnMouseEnter(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
-			xy := getMousePos(event)
+			xy := getMouseXY(event)
+			oldtimesel = layer.chart.timeSelection
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseEnter != nil {
 					drawing.OnMouseEnter(xy, event)
 				}
 			}
+			processTimeSelection()
 		})
 	}
 
 	if (hme & evt_MouseLeave) != 0 {
 		layer.canvasE.SetOnMouseLeave(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
-			xy := getMousePos(event)
+			xy := getMouseXY(event)
+			oldtimesel = layer.chart.timeSelection
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseLeave != nil {
 					drawing.OnMouseLeave(xy, event)
 				}
 			}
+			processTimeSelection()
 		})
 	}
 
 	if (hme & evt_Wheel) != 0 {
 		layer.canvasE.SetOnWheel(func(event *htmlevent.WheelEvent, currentTarget *html.HTMLElement) {
-			var timesel *timeline.TimeSlice
 			for _, drawing := range layer.drawings {
+				oldtimesel = layer.chart.timeSelection
 				if drawing.OnMouseUp != nil {
-					tsel := drawing.OnWheel(event)
-					if tsel != nil {
-						timesel = tsel
-					}
+					drawing.OnWheel(event)
 				}
 			}
-			// propagate change in time selection to all layers and all drawings
-			if timesel != nil {
-				pchart.ChangeTimeSelection(*timesel)
-			}
+			processTimeSelection()
 		})
 	}
-
 }
 
 // Resize resize the drawing buffer according to the canvas element size.
@@ -146,20 +161,18 @@ func (layer *drawingLayer) SetMouseHandlers(pchart *StockChart) {
 // https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
 //
 // Resize calls automatically redraw
-func (layer *drawingLayer) Resize(area Rect) {
-	// TODO: do not redraw if the size has not changed
-
+func (layer *Layer) Resize(newarea Rect) {
 	// resize the canvas HTML element
 	stylemap := layer.canvasE.HTMLElement.AttributeStyleMap()
-	stylemap.Set("left", &typedom.Union{Value: js.ValueOf(fmt.Sprintf("%dpx", area.O.X))})
-	stylemap.Set("top", &typedom.Union{Value: js.ValueOf(fmt.Sprintf("%dpx", area.O.Y))})
-	stylemap.Set("width", &typedom.Union{Value: js.ValueOf(fmt.Sprintf("%dpx", area.Width))})
-	stylemap.Set("height", &typedom.Union{Value: js.ValueOf(fmt.Sprintf("%dpx", area.Height))})
+	stylemap.Set("left", &typedom.Union{Value: js.ValueOf(fmt.Sprintf("%dpx", newarea.O.X))})
+	stylemap.Set("top", &typedom.Union{Value: js.ValueOf(fmt.Sprintf("%dpx", newarea.O.Y))})
+	stylemap.Set("width", &typedom.Union{Value: js.ValueOf(fmt.Sprintf("%dpx", newarea.Width))})
+	stylemap.Set("height", &typedom.Union{Value: js.ValueOf(fmt.Sprintf("%dpx", newarea.Height))})
 
 	// resize the drawing buffer of the canvas
 	dpr := webapi.GetWindow().DevicePixelRatio()
-	dw := math.Abs(float64(area.Width) * dpr)
-	dh := math.Abs(float64(area.Height) * dpr)
+	dw := math.Abs(float64(newarea.Width) * dpr)
+	dh := math.Abs(float64(newarea.Height) * dpr)
 	dbuffwidth := int(dw)
 	dbuffheight := int(dh)
 	layer.canvasE.SetWidth(uint(dbuffwidth))
@@ -173,70 +186,36 @@ func (layer *drawingLayer) Resize(area Rect) {
 
 	// fmt.Printf("Resizing layer %v ", player.String()) //DEBUG:
 	// fmt.Printf("dpr=%f drawbuffw=%v, drawbuffh=%v\n", dpr, dbuffwidth, dbuffheight) //DEBUG:
+
+	// TODO: do not redraw if the size has not changed
 	layer.Redraw()
 }
 
 // Clear the layer
-func (layer *drawingLayer) Clear() {
+func (layer *Layer) Clear() {
 	layer.Ctx2D.ClearRect(float64(layer.ClipArea.O.X), float64(layer.ClipArea.O.Y), float64(layer.ClipArea.Width), float64(layer.ClipArea.Height))
 }
 
-// Clear the layer and Redraw all drawings
-func (layer *drawingLayer) Redraw() {
+// Clear the layer and redraw all drawings.
+func (layer *Layer) Redraw() {
 	layer.Clear()
 	for _, drawing := range layer.drawings {
 		if drawing.OnRedraw != nil {
-			//fmt.Printf("layer:%15s drawing:%15s OnRedraw\n", layer.layerId, drawing.Name) // DEBUG:
 			drawing.OnRedraw()
 		}
 	}
 }
 
-// Update chart selection to all drawings on the layer
-func (layer *drawingLayer) ChangeTimeSelection(timesel timeline.TimeSlice) {
-	if layer.layout != lAREA_NAVBAR {
-		layer.Clear()
-		for _, drawing := range layer.drawings {
-			if drawing.OnChangeTimeSelection != nil {
-				//fmt.Printf("layer:%15s drawing:%15s OnSelectionChange--> Xsel=%v\n", layer.layerId, drawing.Name, timesel) // DEBUG:
-				drawing.OnChangeTimeSelection(timesel)
+// Redraw the layer if at least on drawings need to be redrawn.
+func (layer *Layer) OnChangeTimeSelection() {
+	for _, drawing := range layer.drawings {
+		if drawing.NeedRedraw != nil {
+			need := drawing.NeedRedraw()
+			//fmt.Printf(" drawing:%s, NeedRedraw:%v\n", drawing.id, need) // DEBUG:
+			if need {
+				layer.Redraw()
+				break
 			}
 		}
 	}
-}
-
-type evtHandler int
-
-const (
-	evt_MouseUp    evtHandler = 0b00000001
-	evt_MouseDown  evtHandler = 0b00000010
-	evt_MouseMove  evtHandler = 0b00000100
-	evt_MouseEnter evtHandler = 0b00001000
-	evt_MouseLeave evtHandler = 0b00010000
-	evt_Wheel      evtHandler = 0b00100000
-)
-
-func (layer *drawingLayer) HandledMouseEvents() evtHandler {
-	var e evtHandler
-	for _, drawing := range layer.drawings {
-		if drawing.OnMouseUp != nil {
-			e |= evt_MouseUp
-		}
-		if drawing.OnMouseDown != nil {
-			e |= evt_MouseDown
-		}
-		if drawing.OnMouseMove != nil {
-			e |= evt_MouseMove
-		}
-		if drawing.OnMouseEnter != nil {
-			e |= evt_MouseEnter
-		}
-		if drawing.OnMouseLeave != nil {
-			e |= evt_MouseLeave
-		}
-		if drawing.OnWheel != nil {
-			e |= evt_Wheel
-		}
-	}
-	return e
 }

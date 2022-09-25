@@ -6,9 +6,9 @@
         {
             "label": "build wasm",
             "type": "shell",
-            "command": "GOOS=js GOARCH=wasm go build -o ../webapp/main.wasm",
+            "command": "GOOS=js GOARCH=wasm go build -o ../web/main.wasm",
             "options": {
-                "cwd": "${workspaceRoot}/example/wasm"
+                "cwd": "${workspaceRoot}/examples/wasm"
             }
         },
         {

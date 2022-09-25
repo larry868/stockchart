@@ -1,7 +1,6 @@
 package stockchart
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -17,11 +16,10 @@ type DrawingHoverCandles struct {
 	hoverData *DataStock // the data hovered
 }
 
-func NewDrawingHoverCandles(series *DataList, xrange *timeline.TimeSlice) *DrawingHoverCandles {
+func NewDrawingHoverCandles(series *DataList) *DrawingHoverCandles {
 	drawing := new(DrawingHoverCandles)
 	drawing.Name = "hovercandles"
 	drawing.series = series
-	drawing.xAxisRange = xrange
 	drawing.MainColor = rgb.Black.Lighten(0.5)
 	drawing.Drawing.OnMouseMove = func(xy Point, event *htmlevent.MouseEvent) {
 		drawing.OnMouseMove(xy, event)
@@ -29,6 +27,9 @@ func NewDrawingHoverCandles(series *DataList, xrange *timeline.TimeSlice) *Drawi
 	drawing.Drawing.OnMouseLeave = func(xy Point, event *htmlevent.MouseEvent) {
 		drawing.hoverData = nil
 		drawing.Clear()
+	}
+	drawing.Drawing.NeedRedraw = func() bool {
+		return true
 	}
 	return drawing
 }
@@ -45,7 +46,7 @@ func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.Mouse
 	postime := drawing.xAxisRange.WhatTime(trate)
 	hoverData := drawing.series.GetDataAt(postime)
 	if postime.IsZero() || hoverData == nil {
-		fmt.Println("no data at this position")
+		// fmt.Println("no data at this position") // DEBUG//
 		return
 	}
 

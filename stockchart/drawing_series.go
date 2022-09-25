@@ -7,7 +7,6 @@ import (
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/rgb/v2/bootstrapcolor.go"
-	"github.com/sunraylab/timeline/v2"
 )
 
 type DrawingSeries struct {
@@ -15,18 +14,14 @@ type DrawingSeries struct {
 	fFillArea bool // fullfil the area or draw only the line
 }
 
-func NewDrawingSeries(series *DataList, xrange *timeline.TimeSlice, fFillArea bool) *DrawingSeries {
+func NewDrawingSeries(series *DataList, fFillArea bool) *DrawingSeries {
 	drawing := new(DrawingSeries)
 	drawing.Name = "series"
 	drawing.series = series
-	drawing.xAxisRange = xrange
 	drawing.fFillArea = fFillArea
 	drawing.MainColor = bootstrapcolor.Blue.Lighten(0.5)
 	drawing.Drawing.OnRedraw = func() {
 		drawing.OnRedraw()
-	}
-	drawing.Drawing.OnChangeTimeSelection = func(timesel timeline.TimeSlice) {
-		drawing.OnChangeTimeSelection(timesel)
 	}
 	return drawing
 }
@@ -104,10 +99,4 @@ func (drawing DrawingSeries) OnRedraw() {
 		fillrule := canvas.NonzeroCanvasFillRule
 		drawing.Ctx2D.Fill(&fillrule)
 	}
-}
-
-// OnChangeTimeSelection
-func (pdrawing *DrawingSeries) OnChangeTimeSelection(timesel timeline.TimeSlice) {
-	*pdrawing.xAxisRange = timesel
-	pdrawing.OnRedraw()
 }

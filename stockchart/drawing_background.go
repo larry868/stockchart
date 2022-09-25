@@ -2,7 +2,6 @@ package stockchart
 
 import (
 	"github.com/sunraylab/rgb/v2"
-	"github.com/sunraylab/timeline/v2"
 )
 
 type DrawingBackground struct {
@@ -15,9 +14,6 @@ func NewDrawingBackground(series *DataList) *DrawingBackground {
 	drawing.series = series
 	drawing.MainColor = rgb.Silver.Lighten(0.7)
 	drawing.Drawing.OnRedraw = func() {
-		drawing.OnRedraw()
-	}
-	drawing.Drawing.OnChangeTimeSelection = func(timesel timeline.TimeSlice) {
 		drawing.OnRedraw()
 	}
 	return drawing

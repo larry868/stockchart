@@ -2,9 +2,7 @@ github.com/gowebapi/webapi v0.0.0-20220111190827-0cb1f8ede1ac h1:PGGQsXJIQwOROGF
 github.com/gowebapi/webapi v0.0.0-20220111190827-0cb1f8ede1ac/go.mod h1:idYMKBl+9tqA6sZrzVqN+3XGWANtIRP6CLZsxZOiIFg=
 github.com/sunraylab/datarange v1.1.0 h1:K8nImphwCMprdQujKD/voW8rmcywid38Hg7BBgebPr8=
 github.com/sunraylab/datarange v1.1.0/go.mod h1:aol7ppxrCU9RWrx/vnA3VXGBHDAnAvWY+osq7xKOu8g=
-github.com/sunraylab/rgb/v2 v2.0.0 h1:/ztbGjpapxzgE2O61+3WYwirTrBwjWD7LHMgAXhSiXE=
-github.com/sunraylab/rgb/v2 v2.0.0/go.mod h1:OuV0mZOJ9XJqP7LOKZAl7NXNde59IOLFssOhvFlTQPM=
 github.com/sunraylab/rgb/v2 v2.0.1 h1:E/OrWIpdzo/TnuYyLZs4+uXitr0FI3finsavUz6HvOo=
 github.com/sunraylab/rgb/v2 v2.0.1/go.mod h1:OuV0mZOJ9XJqP7LOKZAl7NXNde59IOLFssOhvFlTQPM=
-github.com/sunraylab/timeline/v2 v2.0.0 h1:P7MKhet5K2AUPtCE65qsR5YB7/7IOhsLEjpZyb3IobA=
-github.com/sunraylab/timeline/v2 v2.0.0/go.mod h1:+NNSjWTWaJiLIxJcgqcdm2+0bgn7btzxnZJBVWp4BYo=
+github.com/sunraylab/timeline/v2 v2.1.0 h1:oOsKbFRtHRACidl3HNyv8b42oAFNg6FIW/IXLRnECQo=
+github.com/sunraylab/timeline/v2 v2.1.0/go.mod h1:+NNSjWTWaJiLIxJcgqcdm2+0bgn7btzxnZJBVWp4BYo=
