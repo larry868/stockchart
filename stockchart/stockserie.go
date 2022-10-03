@@ -62,7 +62,7 @@ func (dl DataList) GetDataAt(t time.Time) (data *DataStock) {
 		}
 		item = item.Next
 	}
-	return data
+	return item
 }
 
 // TimeSlice returns the time boundaries of the DataList, between the Head and the Tail.
