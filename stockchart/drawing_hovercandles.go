@@ -1,7 +1,6 @@
 package stockchart
 
 import (
-	"log"
 	"time"
 
 	"github.com/gowebapi/webapi/core/js"
@@ -36,7 +35,7 @@ func NewDrawingHoverCandles(series *DataList) *DrawingHoverCandles {
 
 func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.MouseEvent) {
 	if drawing.series == nil || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
-		log.Printf("OnMouseMove %q fails: unable to proceed given data", drawing.Name)
+		// log.Printf("OnMouseMove %q fails: unable to proceed given data", drawing.Name) DEBUG:
 		return
 	}
 	//fmt.Printf("%q mousemove xy:%v\n", drawing.Name, xy) //DEBUG:

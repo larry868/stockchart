@@ -1,7 +1,6 @@
 package stockchart
 
 import (
-	"log"
 	"math"
 	"time"
 
@@ -35,7 +34,7 @@ func NewDrawingCandles(series *DataList) *DrawingCandles {
 // The layer should have been cleared before.
 func (drawing DrawingCandles) OnRedraw() {
 	if drawing.series == nil || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
-		log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name)
+		// log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
 		return
 	}
 
