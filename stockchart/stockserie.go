@@ -2,6 +2,7 @@ package stockchart
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/sunraylab/datarange"
@@ -36,6 +37,27 @@ type DataList struct {
 	Head *DataStock // ...-----! the head
 }
 
+func (dl DataList) IsEmpty() bool {
+	return dl.Head == nil
+}
+
+func (pdl *DataList) Reset() {
+	pdl.Tail = nil
+	pdl.Head = nil
+}
+
+func (pdl DataList) Size() (size int) {
+	scan := pdl.Head
+	for scan != nil {
+		size++
+		if scan == pdl.Tail {
+			break
+		}
+		scan = scan.Prev
+	}
+	return size
+}
+
 // Append a dataPoint to the head
 func (dl *DataList) Append(data *DataStock) {
 	// add the data point to the list
@@ -51,6 +73,41 @@ func (dl *DataList) Append(data *DataStock) {
 	}
 	// update head
 	dl.Head = data
+}
+
+// Insert a dataPoint at the right position according to dates
+func (dl *DataList) Insert(newdata *DataStock) {
+	if dl.Head == nil || dl.Tail == nil {
+		dl.Tail = newdata
+		dl.Head = newdata
+		return
+	}
+
+	// scan backward
+	scan := dl.Head
+	for scan != nil {
+		if scan.To.Equal(newdata.To) {
+			// houston on a un pb
+			log.Printf("insert fails because newdata end at the same time of an existing one: %s", newdata.To)
+			return
+		} else if scan.To.Before(newdata.To) {
+			newdata.Next = scan.Next
+			newdata.Prev = scan
+			if scan.Next == nil {
+				dl.Head = newdata
+			} else {
+				scan.Next.Prev = newdata
+			}
+			scan.Next = newdata
+			return
+		}
+		scan = scan.Prev
+	}
+	// we're at the tail
+	dl.Tail.Prev = newdata
+	newdata.Next = dl.Tail
+	newdata.Prev = nil
+	dl.Tail = newdata
 }
 
 // return the dataPoint at t time, nil if no points found
