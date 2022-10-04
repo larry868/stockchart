@@ -15,8 +15,8 @@ type Drawing struct {
 	BackgroundColor rgb.Color // optional, fully transparent by default
 	MainColor       rgb.Color // optional, fully transparent by default
 
-	*Layer                        // the parent layer
-	series     *DataList          // the series of data to draw
+	*Layer           // the parent layer
+	series *DataList // the series of data to draw
 
 	OnRedraw func()
 

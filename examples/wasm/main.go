@@ -19,7 +19,7 @@ func main() {
 	dataset := BuildRandomDataset()
 
 	// Create a new chart
-	_, err := stockchart.NewStockChart("mychart", rgb.Gray.Lighten(0.8), dataset)
+	_, err := stockchart.NewStockChart("mychart", rgb.Gray.Lighten(0.8), *dataset)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)

@@ -21,7 +21,7 @@ type DrawingTimeSelector struct {
 	dragFrom, dragTo, dragIn bool
 
 	// locally updated. The chart.timeSelection is only updated when the drag end
-	timeSelection timeline.TimeSlice 
+	timeSelection timeline.TimeSlice
 
 	MinZoomTime time.Duration // minute by defailt, can be changed
 }
@@ -62,7 +62,7 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 // OnRedrawTimeSelector draws the timeslice selector on top of the navbar.
 // Buttons's position are updated to make it easy to catch them during a mouse event.
 func (drawing *DrawingTimeSelector) OnRedraw() {
-	if drawing.series == nil || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
 		// log.Printf("OnRedraw %s fails: unable to proceed given data", drawing.Name) // DEBUG:
 		return
 	}
@@ -122,7 +122,7 @@ func (drawing *DrawingTimeSelector) OnMouseDown(xy Point, event *htmlevent.Mouse
 	}
 }
 
-// OnMouseUp Stops Dragging and update the chart.timeSelection. 
+// OnMouseUp Stops Dragging and update the chart.timeSelection.
 //
 // If the timeselection changes then the event dispatcher will call OnChangeTimeSelection on all drawings of all layers.
 func (drawing *DrawingTimeSelector) OnMouseUp(xy Point, event *htmlevent.MouseEvent) {
@@ -179,7 +179,7 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 
 // OnWheel manage zoom and shifting the time selection
 func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
-	if drawing.series == nil || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
 		return
 	}
 

@@ -1,6 +1,7 @@
 package stockchart
 
 import (
+	"log"
 	"time"
 
 	"github.com/gowebapi/webapi/core/js"
@@ -26,8 +27,9 @@ func NewDrawingSeries(series *DataList, fFillArea bool) *DrawingSeries {
 }
 
 func (drawing DrawingSeries) OnRedraw() {
-	if drawing.series == nil || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
-		// log.Printf("OnRedraw %s fails: unable to proceed given data", drawing.Name) // DEBUG:
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+		log.Printf("serie size: %v, xAxisRange:%v", drawing.series.Size(), drawing.xAxisRange.String())
+		log.Printf("OnRedraw %s fails: unable to proceed given data", drawing.Name) // DEBUG:
 		return
 	}
 

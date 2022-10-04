@@ -26,7 +26,7 @@ func (drawing *DrawingBackground) OnRedraw() {
 	drawing.DrawTextBox("@github.com/sunraylab", Point{X: drawing.ClipArea.End().X - 50, Y: drawing.ClipArea.End().Y - 50}, AlignEnd|AlignBottom, drawing.MainColor, 0, 0, 0)
 
 	// no data
-	if drawing.series == nil || drawing.series.TimeSlice().Duration() == nil {
+	if drawing.series.IsEmpty() || drawing.series.TimeSlice().Duration() == nil {
 		drawing.Ctx2D.SetFont(`bold 30px 'Roboto', sans-serif`)
 		drawing.DrawTextBox("no data", Point{X: drawing.ClipArea.Middle().X, Y: drawing.ClipArea.Middle().Y}, AlignCenter, drawing.MainColor, 0, 0, 0)
 	}

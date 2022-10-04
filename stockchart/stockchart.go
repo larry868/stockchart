@@ -27,6 +27,7 @@ type StockChart struct {
 	layers    [6]*Layer    // the 6 drawing layers composing a stockchart
 	isDrawing bool         // flag signaling a drawing in progress
 
+	MainSeries    DataList
 	timeRange     timeline.TimeSlice // the overall time range to display
 	timeSelection timeline.TimeSlice // the current time selection
 }
@@ -39,7 +40,7 @@ func (chart StockChart) String() string {
 			str += fmt.Sprintf("  layer %22s: %p\n", player.id, player)
 			for _, pdrawing := range player.drawings {
 				if pdrawing != nil {
-					str += fmt.Sprintf("    drawing %18s: %p series:%p %v\n", pdrawing.Name, pdrawing, pdrawing.series, pdrawing.series)
+					str += fmt.Sprintf("    drawing %18s: %p series:%p %v\n", pdrawing.Name, pdrawing, &pdrawing.series, pdrawing.series)
 				}
 			}
 		}
@@ -47,9 +48,18 @@ func (chart StockChart) String() string {
 	return str
 }
 
-// SetTimeRange defines the overall time range to display.
+// SetTimeRange defines the overall time range to display. Extend the end with extendCoef.
+//
+//	extendCoef == 0 no extension
+//	extendCoef == 0.1 for 10% extention in duration
+//
 // Update timeselection if required
-func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice) {
+func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendCoef float64) {
+	fmt.Println("SetTimeRange", timerange)
+
+	if timerange.Duration() != nil && extendCoef > 0 {
+		timerange.ToExtend(timeline.Duration(float64(*timerange.Duration()) * extendCoef))
+	}
 
 	fstuck := pchart.timeRange.To.Equal(pchart.timeSelection.To)
 
@@ -64,11 +74,17 @@ func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice) {
 	}
 }
 
+// UpdateMainSeries
+func (pchart *StockChart) UpdateMainSeries() {
+	pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), 0.1)
+	pchart.Redraw()
+}
+
 // NewStockChart initialize a stockchart within the <stockchart> HTML element idenfied by chartid.
 // An HTML page can have multiple <stockchart> but with different chartid. The layout of the chart is composed of multiples layers which are stacked canvas.
 //
 // Returns the stockchart created or an error if canvasid is not found.
-func NewStockChart(chartid string, bgcolor rgb.Color, series *DataList) (*StockChart, error) {
+func NewStockChart(chartid string, bgcolor rgb.Color, series DataList) (*StockChart, error) {
 	// some cleaning
 	chartid = strings.ToLower(strings.Trim(chartid, " "))
 
@@ -79,14 +95,13 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series *DataList) (*StockC
 	}
 
 	// build the chart object
-	chart := &StockChart{ID: chartid, masterE: stockchartE}
+	chart := &StockChart{
+		ID:         chartid,
+		masterE:    stockchartE,
+		MainSeries: series}
 
 	// by default the timeMaxRange is the full timeslice + 10% to represents the future.
-	ts := series.TimeSlice()
-	if ts.Duration() != nil {
-		ts.ToExtend(timeline.Duration(float64(*ts.Duration()) * 0.1))
-	}
-	chart.SetTimeRange(ts)
+	chart.SetTimeRange(chart.MainSeries.TimeSlice(), 0.1)
 
 	// create master layer layout, white bg and without drawings
 	// the master layer covers all the <stockchart> element size, and is build first at the background
@@ -96,36 +111,36 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series *DataList) (*StockC
 
 	// the navbar layer, updated only when navXAxisRange change
 	if layer := chart.addNewLayer("1-navbar", lAREA_NAVBAR, rgb.White, &chart.timeRange); layer != nil {
-		layer.AddDrawing(&NewDrawingSeries(series, true).Drawing, rgb.White)
-		layer.AddDrawing(&NewDrawingXGrid(series, true, false).Drawing, rgb.None)
+		layer.AddDrawing(&NewDrawingSeries(&chart.MainSeries, true).Drawing, rgb.White)
+		layer.AddDrawing(&NewDrawingXGrid(&chart.MainSeries, true, false).Drawing, rgb.None)
 		chart.layers[1] = layer
 	}
 
 	// the transparent time selector layer
 	if layer := chart.addNewLayer("2-timeselector", lAREA_NAVBAR, rgb.None, &chart.timeRange); layer != nil {
-		layer.AddDrawing(&NewDrawingTimeSelector(series).Drawing, rgb.None)
+		layer.AddDrawing(&NewDrawingTimeSelector(&chart.MainSeries).Drawing, rgb.None)
 		layer.SetEventDispatcher()
 		chart.layers[2] = layer
 	}
 
 	// the yscale layer
 	if layer := chart.addNewLayer("3-yscale", lAREA_YSCALE, rgb.White, &chart.timeSelection); layer != nil {
-		layer.AddDrawing(&NewDrawingYGrid(series, true).Drawing, rgb.White)
+		layer.AddDrawing(&NewDrawingYGrid(&chart.MainSeries, true).Drawing, rgb.White)
 		chart.layers[3] = layer
 	}
 
 	// the chart layer
 	if layer := chart.addNewLayer("4-chart", lAREA_GRAPH, rgb.White, &chart.timeSelection); layer != nil {
-		layer.AddDrawing(&NewDrawingBackground(series).Drawing, rgb.None)
-		layer.AddDrawing(&NewDrawingYGrid(series, false).Drawing, rgb.None)
-		layer.AddDrawing(&NewDrawingXGrid(series, false, true).Drawing, rgb.None)
-		layer.AddDrawing(&NewDrawingCandles(series).Drawing, rgb.White)
+		layer.AddDrawing(&NewDrawingBackground(&chart.MainSeries).Drawing, rgb.None)
+		layer.AddDrawing(&NewDrawingYGrid(&chart.MainSeries, false).Drawing, rgb.None)
+		layer.AddDrawing(&NewDrawingXGrid(&chart.MainSeries, false, true).Drawing, rgb.None)
+		layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries).Drawing, rgb.White)
 		chart.layers[4] = layer
 	}
 
 	// the hover transprent layer
 	if layer := chart.addNewLayer("5-hover", lAREA_GRAPH, rgb.None, &chart.timeSelection); layer != nil {
-		layer.AddDrawing(&NewDrawingHoverCandles(series).Drawing, rgb.White)
+		layer.AddDrawing(&NewDrawingHoverCandles(&chart.MainSeries).Drawing, rgb.White)
 		layer.SetEventDispatcher()
 		chart.layers[5] = layer
 	}
@@ -133,11 +148,12 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series *DataList) (*StockC
 	// Add event listener on resize event
 	webapi.GetWindow().AddEventResize(func(event *htmlevent.UIEvent, win *webapi.Window) {
 		// resizing the chart will resize and redraw every layers
-		chart.resize()
+		chart.Resize()
 	})
 
 	// size it the first time to force a full redraw
-	chart.resize()
+	chart.Resize()
+
 	return chart, nil
 }
 
@@ -183,7 +199,7 @@ func (pchart *StockChart) addNewLayer(layerid string, layout layoutT, bgcolor rg
 }
 
 // resize all layers according to the master element dimensions.
-func (pchart *StockChart) resize() {
+func (pchart *StockChart) Resize() {
 
 	// get the masterE dimensions
 	cr := pchart.masterE.GetBoundingClientRect()
