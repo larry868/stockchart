@@ -11,6 +11,7 @@ const (
 	evt_MouseEnter evtHandler = 0b0000000000001000
 	evt_MouseLeave evtHandler = 0b0000000000010000
 	evt_Wheel      evtHandler = 0b0000000000100000
+	evt_Click      evtHandler = 0b0000000001000000
 )
 
 func (layer *Layer) HandledEvents() evtHandler {
@@ -33,6 +34,9 @@ func (layer *Layer) HandledEvents() evtHandler {
 		}
 		if drawing.OnWheel != nil {
 			e |= evt_Wheel
+		}
+		if drawing.OnClick != nil {
+			e |= evt_Click
 		}
 	}
 	return e

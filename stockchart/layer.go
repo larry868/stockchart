@@ -64,14 +64,22 @@ func (layer *Layer) SetEventDispatcher() {
 	var oldtimesel timeline.TimeSlice
 	processTimeSelection := func() {
 		if oldtimesel.Compare(layer.chart.timeSelection) == timeline.DIFFERENT {
-			layer.chart.DoChangeTimeSelection()
+			layer.chart.DoChangeTimeSelection(layer.chart.MainSeries.Name)
+		}
+	}
+
+	var olddataSelected *DataStock
+	processSelectData := func() {
+		if olddataSelected != layer.chart.dataSelected {
+			layer.chart.DoSelectData(layer.chart.MainSeries.Name)
 		}
 	}
 
 	// Define functions to capture mouse events on this layer,
 	// only if the layer contains at least one mouse function on its drawings
 	hme := layer.HandledEvents()
-	//fmt.Printf("layer %q, mouse event handled=%08b\n", layer.id, hme) // DEBUG:
+	fmt.Printf("layer %q, mouse event handled=%08b\n", layer.id, hme) // DEBUG:
+
 	if (hme & evt_MouseDown) != 0 {
 		layer.canvasE.SetOnMouseDown(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMouseXY(event)
@@ -150,6 +158,20 @@ func (layer *Layer) SetEventDispatcher() {
 			processTimeSelection()
 		})
 	}
+
+	if (hme & evt_Click) != 0 {
+		layer.canvasE.SetOnClick(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
+			xy := getMouseXY(event)
+			olddataSelected = layer.chart.dataSelected
+			for _, drawing := range layer.drawings {
+				olddataSelected = layer.chart.dataSelected
+				if drawing.OnClick != nil {
+					drawing.OnClick(xy, event)
+				}
+			}
+			processSelectData()
+		})
+	}
 }
 
 // Resize resize the drawing buffer according to the canvas element size.
@@ -206,8 +228,21 @@ func (layer *Layer) Redraw() {
 	}
 }
 
-// Redraw the layer if at least on drawings need to be redrawn.
+// Redraw the layer if at least one drawings need to be redrawn.
 func (layer *Layer) OnChangeTimeSelection() {
+	for _, drawing := range layer.drawings {
+		if drawing.NeedRedraw != nil {
+			need := drawing.NeedRedraw()
+			//fmt.Printf(" drawing:%s, NeedRedraw:%v\n", drawing.id, need) // DEBUG:
+			if need {
+				layer.Redraw()
+				break
+			}
+		}
+	}
+}
+
+func (layer *Layer) OnSelectData() {
 	for _, drawing := range layer.drawings {
 		if drawing.NeedRedraw != nil {
 			need := drawing.NeedRedraw()

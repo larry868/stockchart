@@ -27,6 +27,7 @@ type Drawing struct {
 	OnMouseEnter func(xy Point, event *htmlevent.MouseEvent)
 	OnMouseLeave func(xy Point, event *htmlevent.MouseEvent)
 	OnWheel      func(event *htmlevent.WheelEvent)
+	OnClick      func(xy Point, event *htmlevent.MouseEvent)
 	NeedRedraw   func() bool
 }
 

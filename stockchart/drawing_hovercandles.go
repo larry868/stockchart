@@ -1,6 +1,8 @@
 package stockchart
 
 import (
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/gowebapi/webapi/core/js"
@@ -22,6 +24,9 @@ func NewDrawingHoverCandles(series *DataList) *DrawingHoverCandles {
 	drawing.MainColor = rgb.Black.Lighten(0.5)
 	drawing.Drawing.OnMouseMove = func(xy Point, event *htmlevent.MouseEvent) {
 		drawing.OnMouseMove(xy, event)
+	}
+	drawing.Drawing.OnClick = func(xy Point, event *htmlevent.MouseEvent) {
+		drawing.OnClick(xy, event)
 	}
 	drawing.Drawing.OnMouseLeave = func(xy Point, event *htmlevent.MouseEvent) {
 		drawing.hoverData = nil
@@ -69,5 +74,28 @@ func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.Mouse
 	strtime := postime.Format(strdtefmt)
 	drawing.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
 	drawing.DrawTextBox(strtime, Point{X: xpos, Y: drawing.ClipArea.O.Y + drawing.ClipArea.Height}, AlignCenter|AlignBottom, drawing.MainColor, 5, 1, 1)
+
+}
+
+func (drawing *DrawingHoverCandles) OnClick(xy Point, event *htmlevent.MouseEvent) {
+	fmt.Printf("%q click xy:%v\n", drawing.Name, xy) //DEBUG:
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+		drawing.chart.dataSelected = nil
+		return
+	}
+
+	// get the candle
+	trate := drawing.ClipArea.XRate(xy.X)
+	postime := drawing.xAxisRange.WhatTime(trate)
+	hoverData := drawing.series.GetDataAt(postime)
+	if postime.IsZero() || hoverData == nil {
+		fmt.Println("no data at this position") // DEBUG//
+		drawing.chart.dataSelected = nil
+		return
+	}
+
+	log.Println(hoverData.String())
+
+	drawing.chart.dataSelected = hoverData
 
 }

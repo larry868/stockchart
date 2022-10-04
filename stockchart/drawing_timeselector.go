@@ -63,7 +63,7 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 // Buttons's position are updated to make it easy to catch them during a mouse event.
 func (drawing *DrawingTimeSelector) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
-		// log.Printf("OnRedraw %s fails: unable to proceed given data", drawing.Name) // DEBUG:
+		// log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
 		return
 	}
 

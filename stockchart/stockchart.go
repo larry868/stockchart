@@ -30,6 +30,11 @@ type StockChart struct {
 	MainSeries    DataList
 	timeRange     timeline.TimeSlice // the overall time range to display
 	timeSelection timeline.TimeSlice // the current time selection
+
+	dataSelected *DataStock // the current data selected if any
+
+	FireChangeTimeSelection func(strpair string, ts timeline.TimeSlice) // function called everytime the timeselection change, if not nil
+	FireSelectCandle        func(strpair string, data *DataStock)
 }
 
 // String interface for StockChart, mainly for debugging purpose
@@ -275,9 +280,11 @@ func (pchart *StockChart) Redraw() {
 //
 // It's called by the time selector in the navbar when user navigates,
 // but can be called directly outside of the chart.
-func (pchart *StockChart) DoChangeTimeSelection() {
+//
+// call OnDoChangeTimeSelection if setup
+func (pchart *StockChart) DoChangeTimeSelection(strpair string) {
 	if pchart.isDrawing {
-		fmt.Println("changeTimeSelection request canceled. drawing still in progress")
+		fmt.Println("DoChangeTimeSelection request canceled. drawing still in progress")
 		return
 	}
 
@@ -286,6 +293,27 @@ func (pchart *StockChart) DoChangeTimeSelection() {
 		if player != nil {
 			player.OnChangeTimeSelection()
 		}
+	}
+	if pchart.FireChangeTimeSelection != nil {
+		pchart.FireChangeTimeSelection(strpair, pchart.timeSelection)
+	}
+	pchart.isDrawing = false
+}
+
+func (pchart *StockChart) DoSelectData(strpair string) {
+	if pchart.isDrawing {
+		fmt.Println("DoSelectData request canceled. drawing still in progress")
+		return
+	}
+
+	pchart.isDrawing = true
+	for _, player := range pchart.layers {
+		if player != nil {
+			player.OnSelectData()
+		}
+	}
+	if pchart.FireSelectCandle != nil {
+		pchart.FireSelectCandle(strpair, pchart.dataSelected)
 	}
 	pchart.isDrawing = false
 }
