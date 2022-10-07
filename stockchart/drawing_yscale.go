@@ -1,8 +1,6 @@
 package stockchart
 
 import (
-	"time"
-
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/datarange"
@@ -33,7 +31,7 @@ func NewDrawingYGrid(series *DataList, fscale bool) *DrawingYGrid {
 
 // OnRedraw redraw the Y axis
 func (drawing *DrawingYGrid) OnRedraw() {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		// log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
 		return
 	}

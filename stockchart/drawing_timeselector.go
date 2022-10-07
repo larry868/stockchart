@@ -62,7 +62,7 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 // OnRedrawTimeSelector draws the timeslice selector on top of the navbar.
 // Buttons's position are updated to make it easy to catch them during a mouse event.
 func (drawing *DrawingTimeSelector) OnRedraw() {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		// log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
 		return
 	}
@@ -179,14 +179,14 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 
 // OnWheel manage zoom and shifting the time selection
 func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		return
 	}
 
 	tsel := &drawing.timeSelection
 
 	// define a good timestep: 20% of the current duration
-	timeStep := time.Duration(float64(*tsel.Duration()) * 0.2)
+	timeStep := timeline.Nanoseconds(float64(tsel.Duration().Duration) * float64(0.2))
 	//fmt.Printf("wheel shiftK=%v, dy=%f, timeStep=%v\n", event.ShiftKey(), dy, timeStep) // DEBUG:
 
 	// get the wheel move
@@ -196,11 +196,11 @@ func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 		if dy < 0 {
 			// move to the future
 			d := tsel.Duration()
-			tsel.To = tsel.To.Add(timeStep)
-			tsel.From = tsel.From.Add(timeStep)
+			tsel.To = tsel.To.Add(timeStep.Duration)
+			tsel.From = tsel.From.Add(timeStep.Duration)
 			if tsel.To.After(drawing.xAxisRange.To) {
 				tsel.To = drawing.xAxisRange.To
-				tsel.From = tsel.To.Add(-time.Duration(*d))
+				tsel.From = tsel.To.Add(-d.Duration)
 			}
 			if tsel.From.After(drawing.series.Head.From) {
 				tsel.From = drawing.series.Head.From
@@ -208,11 +208,11 @@ func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 		} else if dy > 0 {
 			// move to the past
 			d := tsel.Duration()
-			tsel.From = tsel.From.Add(-timeStep)
-			tsel.To = tsel.To.Add(-timeStep)
+			tsel.From = tsel.From.Add(-timeStep.Duration)
+			tsel.To = tsel.To.Add(-timeStep.Duration)
 			if tsel.From.Before(drawing.xAxisRange.From) {
 				tsel.From = drawing.xAxisRange.From
-				tsel.To = tsel.From.Add(time.Duration(*d))
+				tsel.To = tsel.From.Add(d.Duration)
 			}
 		}
 	} else {
@@ -220,7 +220,7 @@ func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 		if dy > 0 {
 			// zoom+ > reduce the timeslice, but no more than the tsel.To duration
 			//fmt.Printf("zoom- mind=%s, at:%s, timeStep=%v\n", mind, at, timeStep) // DEBUG:
-			tsel.From = tsel.From.Add(timeStep)
+			tsel.From = tsel.From.Add(timeStep.Duration)
 			if tsel.From.Add(drawing.MinZoomTime).After(tsel.To) {
 				tsel.From = tsel.To.Add(-drawing.MinZoomTime)
 			}
@@ -230,7 +230,7 @@ func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 		} else if dy < 0 {
 			// zoom- > enlarge the timeslice
 			//fmt.Printf("zoom+ timeStep=%v\n", timeStep) // DEBUG:
-			tsel.From = tsel.From.Add(-timeStep)
+			tsel.From = tsel.From.Add(-timeStep.Duration)
 			if tsel.From.Before(drawing.xAxisRange.From) {
 				tsel.From = drawing.xAxisRange.From
 			}

@@ -39,7 +39,7 @@ func NewDrawingHoverCandles(series *DataList) *DrawingHoverCandles {
 }
 
 func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.MouseEvent) {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		// log.Printf("OnMouseMove %q fails: unable to proceed given data", drawing.Name) DEBUG:
 		return
 	}
@@ -79,7 +79,7 @@ func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.Mouse
 
 func (drawing *DrawingHoverCandles) OnClick(xy Point, event *htmlevent.MouseEvent) {
 	fmt.Printf("%q click xy:%v\n", drawing.Name, xy) //DEBUG:
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		drawing.chart.dataSelected = nil
 		return
 	}

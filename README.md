@@ -81,6 +81,7 @@ Go provides a specific js file called `wasm_exec.js` that need to be served by y
 
 ## Change log
 
+- v0.6.1 alpha: upgrade with timeline v2.2.1
 - v0.6.0 alpha: handle click event to select a data, fire func on select
 - v0.5.0 alpha: fix + enhance series list
 - v0.4.0 alpha: improved management of time selection + renaming the package

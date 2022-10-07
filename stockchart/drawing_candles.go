@@ -33,7 +33,7 @@ func NewDrawingCandles(series *DataList) *DrawingCandles {
 // OnRedraw redraws all candles inside the xAxisRange of the OHLC series
 // The layer should have been cleared before.
 func (drawing DrawingCandles) OnRedraw() {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		// log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
 		return
 	}
@@ -50,7 +50,7 @@ func (drawing DrawingCandles) OnRedraw() {
 	//fmt.Printf("clip:%s draw:%s\n", drawing.clipArea, drawArea) // DEBUG:
 
 	// get xfactor & yfactor according to time selection
-	xfactor := float64(drawArea.Width) / float64(*drawing.xAxisRange.Duration())
+	xfactor := float64(drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawArea.Height) / drawing.series.DataRange(drawing.xAxisRange, 10).Delta()
 	lowboundary := drawing.series.DataRange(drawing.xAxisRange, 10).Low()
 	//fmt.Printf("xfactor:%f yfactor:%f\n", xfactor, yfactor) // DEBUG:
@@ -61,8 +61,8 @@ func (drawing DrawingCandles) OnRedraw() {
 	item := drawing.series.Tail
 	for item != nil {
 		// skip items out of range
-		d := item.TimeSlice.Duration()
-		if item.TimeSlice.To.Before(drawing.xAxisRange.From) || d == nil || float64(*d) == 0 {
+		d := item.Duration()
+		if item.To.Before(drawing.xAxisRange.From) || item.IsInfinite() || item.Duration().Duration == 0 {
 			// scan next item
 			item = item.Next
 			continue
@@ -85,7 +85,7 @@ func (drawing DrawingCandles) OnRedraw() {
 
 		// x axis: time
 		rcandle.O.X = drawArea.O.X + int(math.Round(xfactor*float64(item.TimeSlice.From.Sub(drawing.xAxisRange.From))))
-		rcandle.Width = imax(1, int(math.Round(xfactor*float64(*d))))
+		rcandle.Width = imax(1, int(math.Round(xfactor*float64(d.Duration))))
 
 		// add padding between candles
 		xpadding := int(float64(rcandle.Width) * 0.1)

@@ -2,7 +2,6 @@ package stockchart
 
 import (
 	"log"
-	"time"
 
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
@@ -27,7 +26,7 @@ func NewDrawingSeries(series *DataList, fFillArea bool) *DrawingSeries {
 }
 
 func (drawing DrawingSeries) OnRedraw() {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || drawing.xAxisRange.Duration() == nil || time.Duration(*drawing.xAxisRange.Duration()).Seconds() < 0 {
+	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		log.Printf("serie size: %v, xAxisRange:%v", drawing.series.Size(), drawing.xAxisRange.String())
 		//log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
 		return
@@ -48,7 +47,7 @@ func (drawing DrawingSeries) OnRedraw() {
 	//fmt.Printf("clip:%s draw:%s\n", drawing.clipArea, drawArea) // DEBUG:
 
 	// get xfactor & yfactor according to time selection
-	xfactor := float64(drawArea.Width) / float64(*drawing.xAxisRange.Duration())
+	xfactor := float64(drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawArea.Height) / drawing.series.DataRange(drawing.xAxisRange, 10).Delta()
 	lowboundary := drawing.series.DataRange(drawing.xAxisRange, 10).Low()
 	//fmt.Printf("xfactor:%f yfactor:%f\n", xfactor, yfactor) // DEBUG:

@@ -62,8 +62,8 @@ func (chart StockChart) String() string {
 func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendCoef float64) {
 	fmt.Println("SetTimeRange", timerange)
 
-	if timerange.Duration() != nil && extendCoef > 0 {
-		timerange.ToExtend(timeline.Duration(float64(*timerange.Duration()) * extendCoef))
+	if timerange.Duration().IsFinite && extendCoef > 0 {
+		timerange.ToExtend(timeline.Nanoseconds(float64(timerange.Duration().Duration) * extendCoef))
 	}
 
 	fstuck := pchart.timeRange.To.Equal(pchart.timeSelection.To)
