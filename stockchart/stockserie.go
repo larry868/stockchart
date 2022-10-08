@@ -12,16 +12,16 @@ import (
 // DataStock is a value at a given timestamp.
 // It's linked with previous and following data
 type DataStock struct {
-	Open   float64
-	Low    float64
-	High   float64
-	Close  float64
-	Volume float64
+	timeline.TimeSlice `json:"timeslice"`
 
-	timeline.TimeSlice
+	Open   float64 `json:"open"`
+	Low    float64 `json:"low"`
+	High   float64 `json:"high"`
+	Close  float64 `json:"close"`
+	Volume float64 `json:"volule"`
 
-	Next *DataStock // going to the head
-	Prev *DataStock // going to the tail
+	Next *DataStock `json:"-"` // going to the head
+	Prev *DataStock `json:"-"` // going to the tail
 }
 
 func (dp DataStock) String() string {
@@ -35,6 +35,11 @@ type DataList struct {
 	Name string
 	Tail *DataStock // the tail !-----...
 	Head *DataStock // ...-----! the head
+}
+
+func (dl DataList) String() string {
+	str := fmt.Sprintf("list size:%v, timeslice:%s, datarange:%s", dl.Size(), dl.TimeSlice(), dl.DataRange(nil, 0))
+	return str
 }
 
 func (dl DataList) IsEmpty() bool {
@@ -59,23 +64,24 @@ func (pdl DataList) Size() (size int) {
 }
 
 // Append a dataPoint to the head
-func (dl *DataList) Append(data *DataStock) {
+func (dl *DataList) Append(newdata *DataStock) {
 	// add the data point to the list
-	data.Next = nil
-	data.Prev = dl.Head
+	newdata.Next = nil
+	newdata.Prev = dl.Head
 	// link previous data
-	if data.Prev != nil {
-		data.Prev.Next = data
+	if newdata.Prev != nil {
+		newdata.Prev.Next = newdata
 	}
 	// first data
 	if dl.Tail == nil {
-		dl.Tail = data
+		dl.Tail = newdata
 	}
 	// update head
-	dl.Head = data
+	dl.Head = newdata
 }
 
 // Insert a dataPoint at the right position according to dates
+// backward lookup to find the insert position
 func (dl *DataList) Insert(newdata *DataStock) {
 	if dl.Head == nil || dl.Tail == nil {
 		dl.Tail = newdata
@@ -136,9 +142,9 @@ func (dl DataList) TimeSlice() timeline.TimeSlice {
 
 // DataRange returns the data boundaries of the DataList, scanning all datapoint between the timeslice boundaries
 //
-//		ts == nil scan all data points between the Head and the Tail:
-//	 if maxSteps == 0 the returned datarange doesn't have any stepzise.
-//	 if maxSteps > 0 the returned datarange gets a stepzise and boudaries are rounded.
+//	ts == nil scan all data points between the Head and the Tail:
+//	if maxSteps == 0 the returned datarange doesn't have any stepzise.
+//	if maxSteps > 0 the returned datarange gets a stepzise and boudaries are rounded.
 //
 // returns an empty datarange if the list is empty or if missing head or tail.
 func (dl DataList) DataRange(ts *timeline.TimeSlice, maxSteps uint) (dr datarange.DataRange) {
