@@ -2,7 +2,6 @@ package stockchart
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/gowebapi/webapi/core/js"
@@ -78,7 +77,7 @@ func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.Mouse
 }
 
 func (drawing *DrawingHoverCandles) OnClick(xy Point, event *htmlevent.MouseEvent) {
-	fmt.Printf("%q click xy:%v\n", drawing.Name, xy) //DEBUG:
+	
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		drawing.chart.dataSelected = nil
 		return
@@ -89,12 +88,12 @@ func (drawing *DrawingHoverCandles) OnClick(xy Point, event *htmlevent.MouseEven
 	postime := drawing.xAxisRange.WhatTime(trate)
 	hoverData := drawing.series.GetDataAt(postime)
 	if postime.IsZero() || hoverData == nil {
-		fmt.Println("no data at this position") // DEBUG//
+		fmt.Printf("%q click xy:%v ==> no data found at this position", drawing.Name, xy) //DEBUG:
 		drawing.chart.dataSelected = nil
 		return
 	}
 
-	log.Println(hoverData.String())
+	fmt.Printf("%q click xy:%v ==> %s", drawing.Name, xy, hoverData.String()) //DEBUG:
 
 	drawing.chart.dataSelected = hoverData
 

@@ -59,7 +59,8 @@ func (chart StockChart) String() string {
 //	extendCoef == 0.1 for 10% extention in duration
 //
 // Update timeselection if required
-func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendCoef float64) {
+// Returns the setup timerange 
+func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendCoef float64) timeline.TimeSlice {
 	fmt.Println("SetTimeRange", timerange)
 
 	if timerange.Duration().IsFinite && extendCoef > 0 {
@@ -77,12 +78,16 @@ func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendCoef 
 	if fstuck || pchart.timeSelection.To.IsZero() || pchart.timeSelection.To.After(pchart.timeRange.To) {
 		pchart.timeSelection.To = pchart.timeRange.To
 	}
+	return pchart.timeRange
 }
 
-// UpdateMainSeries
-func (pchart *StockChart) UpdateMainSeries() {
-	pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), 0.1)
+// UpdateMainSeries sets the overall timeslice to display then redraw all the chart.
+// Based on the mainseries timeslice.
+// return the new timerange 
+func (pchart *StockChart) UpdateMainSeries() timeline.TimeSlice {
+	tr := pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), 0.1)
 	pchart.Redraw()
+	return tr
 }
 
 // NewStockChart initialize a stockchart within the <stockchart> HTML element idenfied by chartid.
