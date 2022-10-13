@@ -73,6 +73,8 @@ Functionnal drawings are based on the drawing stuct providing some drawing primi
 
 ![layers and modules](layersndrawings.png)
 
+[see more technical here](doc.md)
+
 ### Use Web Assembly with go
 
 Some documentation available here https://tinygo.org/docs/guides/webassembly/ and here https://github.com/golang/go/wiki/WebAssembly
@@ -81,6 +83,7 @@ Go provides a specific js file called `wasm_exec.js` that need to be served by y
 
 ## Change log
 
+- v0.7.0 alpha: major change in management of selection, now works with request out of the chart
 - v0.6.1 alpha: upgrade with timeline v2.2.1
 - v0.6.0 alpha: handle click event to select a data, fire func on select
 - v0.5.0 alpha: fix + enhance series list

@@ -1,14 +1,19 @@
 package stockchart
 
 import (
+	"fmt"
+
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/rgb/v2/bootstrapcolor.go"
+	"github.com/sunraylab/timeline/v2"
 )
 
 type DrawingSeries struct {
 	Drawing
 	fFillArea bool // fullfil the area or draw only the line
+
+	lastSelectedData *DataStock
 }
 
 func NewDrawingSeries(series *DataList, fFillArea bool) *DrawingSeries {
@@ -20,14 +25,55 @@ func NewDrawingSeries(series *DataList, fFillArea bool) *DrawingSeries {
 	drawing.Drawing.OnRedraw = func() {
 		drawing.OnRedraw()
 	}
+	drawing.Drawing.NeedRedraw = func() bool {
+		fnillast := drawing.lastSelectedData == nil
+		fnilnow := drawing.Layer.selectedData == nil
+		fneed := fnilnow != fnillast
+		fneed = fneed || (!fnillast && !fnilnow && drawing.lastSelectedData.TimeSlice.Compare(drawing.Layer.selectedData.TimeSlice) != timeline.EQUAL)
+		var strlast, strnow string
+		if !fnillast {
+			strlast = drawing.lastSelectedData.TimeSlice.String()
+		}
+		if !fnilnow {
+			strnow = drawing.Layer.selectedData.TimeSlice.String()
+		}
+		fmt.Printf("series needs redraw:%v, last:%s now:%s\n", fneed, strlast, strnow)
+		return fneed
+	}
 	return drawing
 }
 
-func (drawing DrawingSeries) OnRedraw() {
+func (drawing *DrawingSeries) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		//log.Printf("serie size: %v, xAxisRange:%v", drawing.series.Size(), drawing.xAxisRange.String())
 		//log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
 		return
+	}
+
+	// reduce the cliping area
+	drawArea := drawing.ClipArea.Shrink(0, 5)
+	fmt.Printf("clip:%s draw:%s\n", drawing.ClipArea, drawArea) // DEBUG:
+
+	// get xfactor & yfactor according to time selection
+	xfactor := float64(drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
+	yfactor := float64(drawArea.Height) / drawing.series.DataRange(drawing.xAxisRange, 10).Delta()
+	lowboundary := drawing.series.DataRange(drawing.xAxisRange, 10).Low()
+	//fmt.Printf("xfactor:%f yfactor:%f\n", xfactor, yfactor) // DEBUG:
+
+	// draw selected data if any
+	if drawing.Layer.selectedData != nil {
+		tsemiddle := drawing.Layer.selectedData.Middle()
+		fmt.Println("sel", tsemiddle)
+		if drawing.xAxisRange.WhereIs(tsemiddle)&timeline.TS_IN > 0 {
+			drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
+			drawing.Ctx2D.SetLineWidth(1)
+			xseldata := drawArea.O.X + int(xfactor*float64(tsemiddle.Sub(drawing.xAxisRange.From)))
+			fmt.Printf("draw sel: xseldata:%v, Y:%v\n", xseldata, drawing.ClipArea.O.Y)
+			drawing.Ctx2D.BeginPath()
+			drawing.Ctx2D.MoveTo(float64(xseldata), float64(drawing.ClipArea.O.Y))
+			drawing.Ctx2D.LineTo(float64(xseldata), float64(drawing.ClipArea.O.Y+drawing.ClipArea.Height))
+			drawing.Ctx2D.Stroke()
+		}
 	}
 
 	// setup drawing tools
@@ -39,16 +85,6 @@ func (drawing DrawingSeries) OnRedraw() {
 	}
 	drawing.Ctx2D.SetLineJoin(canvas.RoundCanvasLineJoin)
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Lighten(0.8).Hexa())})
-
-	// reduce the cliping area
-	drawArea := drawing.ClipArea.Shrink(0, 5)
-	//fmt.Printf("clip:%s draw:%s\n", drawing.clipArea, drawArea) // DEBUG:
-
-	// get xfactor & yfactor according to time selection
-	xfactor := float64(drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
-	yfactor := float64(drawArea.Height) / drawing.series.DataRange(drawing.xAxisRange, 10).Delta()
-	lowboundary := drawing.series.DataRange(drawing.xAxisRange, 10).Low()
-	//fmt.Printf("xfactor:%f yfactor:%f\n", xfactor, yfactor) // DEBUG:
 
 	// scan all points
 	var x0, xclose int
@@ -97,4 +133,7 @@ func (drawing DrawingSeries) OnRedraw() {
 		fillrule := canvas.NonzeroCanvasFillRule
 		drawing.Ctx2D.Fill(&fillrule)
 	}
+
+	// memorize last sel data
+	drawing.lastSelectedData = drawing.Layer.selectedData
 }

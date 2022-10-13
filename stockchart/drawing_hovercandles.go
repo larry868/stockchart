@@ -37,6 +37,7 @@ func NewDrawingHoverCandles(series *DataList) *DrawingHoverCandles {
 	return drawing
 }
 
+// draw the line over the candle where the mouse is
 func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.MouseEvent) {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		// log.Printf("OnMouseMove %q fails: unable to proceed given data", drawing.Name) DEBUG:
@@ -63,38 +64,35 @@ func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.Mouse
 	drawing.Clear()
 
 	// draw a line at the middle of the selected candle
-	xtimerate := drawing.xAxisRange.Progress(hoverData.TimeSlice.Middle())
+	middletime := hoverData.TimeSlice.Middle()
+	xtimerate := drawing.xAxisRange.Progress(middletime)
 	xpos := drawing.ClipArea.O.X + int(float64(drawing.ClipArea.Width)*xtimerate)
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
 	drawing.Ctx2D.FillRect(float64(xpos), float64(drawing.ClipArea.O.Y), 1, float64(drawing.ClipArea.Height))
 
 	// draw the date in the footer
-	strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(postime, time.Time{})
-	strtime := postime.Format(strdtefmt)
+	strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(middletime, time.Time{})
+	strtime := middletime.Format(strdtefmt)
 	drawing.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
 	drawing.DrawTextBox(strtime, Point{X: xpos, Y: drawing.ClipArea.O.Y + drawing.ClipArea.Height}, AlignCenter|AlignBottom, drawing.MainColor, 5, 1, 1)
 
 }
 
+// select a candle
 func (drawing *DrawingHoverCandles) OnClick(xy Point, event *htmlevent.MouseEvent) {
-	
+
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		drawing.chart.dataSelected = nil
+		drawing.Layer.selectedData = nil
 		return
 	}
 
 	// get the candle
 	trate := drawing.ClipArea.XRate(xy.X)
 	postime := drawing.xAxisRange.WhatTime(trate)
-	hoverData := drawing.series.GetDataAt(postime)
-	if postime.IsZero() || hoverData == nil {
+	drawing.Layer.selectedData = drawing.series.GetDataAt(postime)
+	if postime.IsZero() || drawing.Layer.selectedData == nil {
 		fmt.Printf("%q click xy:%v ==> no data found at this position", drawing.Name, xy) //DEBUG:
-		drawing.chart.dataSelected = nil
-		return
+	} else {
+		fmt.Printf("%q click xy:%v ==> %s", drawing.Name, xy, drawing.Layer.selectedData.String()) //DEBUG:
 	}
-
-	fmt.Printf("%q click xy:%v ==> %s", drawing.Name, xy, hoverData.String()) //DEBUG:
-
-	drawing.chart.dataSelected = hoverData
-
 }

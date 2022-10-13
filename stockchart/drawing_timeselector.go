@@ -20,8 +20,7 @@ type DrawingTimeSelector struct {
 	isResizeCursor           bool // is the cursor resize ?
 	dragFrom, dragTo, dragIn bool
 
-	// locally updated. The chart.timeSelection is only updated when the drag end
-	timeSelection timeline.TimeSlice
+	timeSelection timeline.TimeSlice // locally updated. The chart.timeSelection is only updated when the drag end
 
 	MinZoomTime time.Duration // minute by defailt, can be changed
 }
@@ -56,6 +55,7 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 	drawing.Drawing.OnWheel = func(event *htmlevent.WheelEvent) {
 		drawing.OnWheel(event)
 	}
+	// NeddRedraw always false, the time selector is redrawn only by user interecting on it
 	return drawing
 }
 
@@ -68,22 +68,22 @@ func (drawing *DrawingTimeSelector) OnRedraw() {
 	}
 
 	// init time sel on first redraw
-	if drawing.timeSelection.From.IsZero() {
-		drawing.timeSelection = drawing.chart.timeSelection
-	}
+	// if drawing.timeSelection.IsZero() {
+	drawing.timeSelection = drawing.Layer.selectedTimeSlice
+	// }
 
 	// get the y center for redrawing the buttons
 	ycenter := float64(drawing.ClipArea.O.Y) + float64(drawing.ClipArea.Height)/2.0
 
 	// draw the left selector
-	xleftrate := drawing.xAxisRange.Progress(drawing.timeSelection.From)
+	xleftrate := drawing.xAxisRange.Progress(drawing.selectedTimeSlice.From)
 	xposleft := float64(drawing.ClipArea.O.X) + float64(drawing.ClipArea.Width)*xleftrate
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Opacify(0.4).Hexa())})
 	drawing.Ctx2D.FillRect(float64(drawing.ClipArea.O.X), float64(drawing.ClipArea.O.Y), xposleft, float64(drawing.ClipArea.Height))
 	moveButton(drawing, &drawing.buttonFrom, xposleft, ycenter)
 
 	// draw the right selector
-	xrightrate := drawing.xAxisRange.Progress(drawing.timeSelection.To)
+	xrightrate := drawing.xAxisRange.Progress(drawing.selectedTimeSlice.To)
 	xposright := float64(drawing.ClipArea.O.X) + float64(drawing.ClipArea.Width)*xrightrate
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Opacify(0.4).Hexa())})
 	drawing.Ctx2D.FillRect(xposright, float64(drawing.ClipArea.O.Y), float64(drawing.ClipArea.Width)-xposright, float64(drawing.ClipArea.Height))
@@ -129,7 +129,7 @@ func (drawing *DrawingTimeSelector) OnMouseUp(xy Point, event *htmlevent.MouseEv
 	//fmt.Printf("%q mouseup xy:%v\n", drawing.Name, xy) //DEBUG:
 
 	// update the chart time selection
-	drawing.chart.timeSelection = drawing.timeSelection
+	drawing.Layer.selectedTimeSlice = drawing.timeSelection
 
 	// reset drag flag
 	drawing.dragFrom = false
@@ -162,15 +162,14 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 	if drawing.dragFrom {
 		rate := drawing.ClipArea.XRate(xy.X)
 		postime := drawing.xAxisRange.WhatTime(rate)
-		if postime.Before(drawing.chart.timeSelection.To.Add(-drawing.MinZoomTime)) {
+		if postime.Before(drawing.Layer.selectedTimeSlice.To.Add(-drawing.MinZoomTime)) {
 			drawing.timeSelection.FromMove(postime, true)
 			drawing.Redraw()
 		}
-
 	} else if drawing.dragTo {
 		rate := drawing.ClipArea.XRate(xy.X)
 		postime := drawing.xAxisRange.WhatTime(rate)
-		if postime.After(drawing.chart.timeSelection.From.Add(drawing.MinZoomTime)) {
+		if postime.After(drawing.Layer.selectedTimeSlice.From.Add(drawing.MinZoomTime)) {
 			drawing.timeSelection.ToMove(postime, true)
 			drawing.Redraw()
 		}
@@ -238,6 +237,8 @@ func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 	}
 
 	// update the chart time selection
-	drawing.chart.timeSelection = *tsel
-	drawing.Redraw()
+	drawing.Layer.selectedTimeSlice = *tsel
+
+	// redraw the timeselector only !
+	//drawing.Redraw() // HACK:
 }
