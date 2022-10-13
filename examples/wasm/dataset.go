@@ -52,7 +52,6 @@ func BuildRandomDataset() *stockchart.DataList {
 
 		last = p.TimeSlice.To
 		open = p.Close
-		//fmt.Println(p.String()) // DEBUG:
 	}
 	return dataset
 }

@@ -9,7 +9,8 @@
             "command": "GOOS=js GOARCH=wasm go build -o ../web/main.wasm",
             "options": {
                 "cwd": "${workspaceRoot}/examples/wasm"
-            }
+            },
+            "group": "build"
         },
         {
             "label": "clean go cach",

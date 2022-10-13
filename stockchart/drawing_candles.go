@@ -1,6 +1,7 @@
 package stockchart
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -34,7 +35,7 @@ func NewDrawingCandles(series *DataList) *DrawingCandles {
 // The layer should have been cleared before.
 func (drawing DrawingCandles) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		// log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
+		Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw fails: unable to proceed given data", drawing.Name))
 		return
 	}
 
@@ -47,13 +48,27 @@ func (drawing DrawingCandles) OnRedraw() {
 	// reduce the drawing area
 	drawArea := drawing.ClipArea.Shrink(0, 5)
 	drawArea.Height -= 15
-	//fmt.Printf("clip:%s draw:%s\n", drawing.clipArea, drawArea) // DEBUG:
-
+	
 	// get xfactor & yfactor according to time selection
 	xfactor := float64(drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawArea.Height) / drawing.series.DataRange(drawing.xAxisRange, 10).Delta()
 	lowboundary := drawing.series.DataRange(drawing.xAxisRange, 10).Low()
-	//fmt.Printf("xfactor:%f yfactor:%f\n", xfactor, yfactor) // DEBUG:
+
+	Debug(DBG_REDRAW, fmt.Sprintf("%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawArea, drawing.xAxisRange.String(), xfactor, yfactor))
+
+	// draw selected data if any
+	if drawing.chart.selectedData != nil {
+		tsemiddle := drawing.chart.selectedData.Middle()
+		if drawing.xAxisRange.WhereIs(tsemiddle)&timeline.TS_IN > 0 {
+			drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
+			drawing.Ctx2D.SetLineWidth(1)
+			xseldata := drawArea.O.X + int(xfactor*float64(tsemiddle.Sub(drawing.xAxisRange.From)))
+			drawing.Ctx2D.BeginPath()
+			drawing.Ctx2D.MoveTo(float64(xseldata)+0.5, float64(drawing.ClipArea.O.Y))
+			drawing.Ctx2D.LineTo(float64(xseldata)+0.5, float64(drawing.ClipArea.O.Y+drawing.ClipArea.Height))
+			drawing.Ctx2D.Stroke()
+		}
+	}
 
 	// scan all points
 	var last *DataStock
@@ -109,7 +124,6 @@ func (drawing DrawingCandles) OnRedraw() {
 
 			// draw OC
 			drawing.Ctx2D.FillRect(float64(rcandle.O.X), float64(rcandle.O.Y), float64(rcandle.Width), float64(rcandle.Height))
-			//fmt.Printf("candle: %v\n", rcandle) // DEBUG:
 		}
 
 		// build LH candle-wick rect

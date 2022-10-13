@@ -1,6 +1,7 @@
 package stockchart
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gowebapi/webapi/core/js"
@@ -32,20 +33,22 @@ func NewDrawingXGrid(series *DataList, fFullGrid bool, timeSelDependant bool) *D
 // OnRedraw DrawingXGrid
 func (drawing DrawingXScale) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		//log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
+		Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw fails: unable to proceed given data", drawing.Name))
 		return
 	}
+
+	
+	// define the grid scale
+	const minxstepwidth = 100.0
+	maxscans := float64(drawing.ClipArea.Width) / minxstepwidth
+	maskmain := drawing.xAxisRange.GetScanMask(uint(maxscans))
+	
+	Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw drawarea:%s, xAxisRange:%v, maskmain=%v\n", drawing.Name, drawing.ClipArea, drawing.xAxisRange.String(), maskmain))
 
 	// setup default text drawing properties
 	drawing.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
 	drawing.Ctx2D.SetTextBaseline(canvas.BottomCanvasTextBaseline)
 	drawing.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
-
-	// define the grid scale
-	const minxstepwidth = 100.0
-	maxscans := float64(drawing.ClipArea.Width) / minxstepwidth
-	maskmain := drawing.xAxisRange.GetScanMask(uint(maxscans))
-	//fmt.Printf("drawing %q, drawing %q, maskmain=%v\n", drawing.drawingId, drawing.Name, maskmain) // DEBUG:
 
 	// set fillstyle for the grid lines
 	gMainColor := drawing.MainColor.Opacify(0.4)
@@ -90,7 +93,6 @@ func (drawing DrawingXScale) OnRedraw() {
 		// draw the main grid line
 		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gMainColor.Hexa())})
 		drawing.Ctx2D.FillRect(float64(xpos), float64(drawing.ClipArea.O.Y+drawing.ClipArea.Height), 1.0, -float64(drawing.ClipArea.Height))
-		//fmt.Printf("xaxis xpos:%v\n", xpos) // DEBUG:
 
 		// draw time label if not overlapping last label
 		if (xpos + 2) > lastlabelend {

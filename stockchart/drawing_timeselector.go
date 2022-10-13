@@ -1,7 +1,7 @@
 package stockchart
 
 import (
-	"log"
+	"fmt"
 	"time"
 
 	"github.com/gowebapi/webapi/core/js"
@@ -20,7 +20,7 @@ type DrawingTimeSelector struct {
 	isResizeCursor           bool // is the cursor resize ?
 	dragFrom, dragTo, dragIn bool
 
-	timeSelection timeline.TimeSlice // locally updated. The chart.timeSelection is only updated when the drag end
+	dragtimeSelection timeline.TimeSlice // locally updated. The chart.timeSelection is only updated when the drag end
 
 	MinZoomTime time.Duration // minute by defailt, can be changed
 }
@@ -55,6 +55,9 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 	drawing.Drawing.OnWheel = func(event *htmlevent.WheelEvent) {
 		drawing.OnWheel(event)
 	}
+	drawing.Drawing.NeedRedraw = func() bool {
+		return drawing.dragtimeSelection != drawing.chart.selectedTimeSlice
+	}
 	// NeddRedraw always false, the time selector is redrawn only by user interecting on it
 	return drawing
 }
@@ -63,27 +66,34 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 // Buttons's position are updated to make it easy to catch them during a mouse event.
 func (drawing *DrawingTimeSelector) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		// log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
+		Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw fails: unable to proceed given data", drawing.Name))
 		return
 	}
 
-	// init time sel on first redraw
-	// if drawing.timeSelection.IsZero() {
-	drawing.timeSelection = drawing.Layer.selectedTimeSlice
-	// }
+	Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw drawarea:%s, xAxisRange:%v\n", drawing.Name, drawing.ClipArea, drawing.xAxisRange.String()))
+
+	// take into account the selectedTimeSlice at chatr level
+	drawing.dragtimeSelection = drawing.chart.selectedTimeSlice
+
+	drawing.redraw()
+
+}
+
+// local redraw, based on the current drawing selection
+func (drawing *DrawingTimeSelector) redraw() {
 
 	// get the y center for redrawing the buttons
 	ycenter := float64(drawing.ClipArea.O.Y) + float64(drawing.ClipArea.Height)/2.0
 
 	// draw the left selector
-	xleftrate := drawing.xAxisRange.Progress(drawing.selectedTimeSlice.From)
+	xleftrate := drawing.xAxisRange.Progress(drawing.dragtimeSelection.From)
 	xposleft := float64(drawing.ClipArea.O.X) + float64(drawing.ClipArea.Width)*xleftrate
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Opacify(0.4).Hexa())})
 	drawing.Ctx2D.FillRect(float64(drawing.ClipArea.O.X), float64(drawing.ClipArea.O.Y), xposleft, float64(drawing.ClipArea.Height))
 	moveButton(drawing, &drawing.buttonFrom, xposleft, ycenter)
 
 	// draw the right selector
-	xrightrate := drawing.xAxisRange.Progress(drawing.selectedTimeSlice.To)
+	xrightrate := drawing.xAxisRange.Progress(drawing.dragtimeSelection.To)
 	xposright := float64(drawing.ClipArea.O.X) + float64(drawing.ClipArea.Width)*xrightrate
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Opacify(0.4).Hexa())})
 	drawing.Ctx2D.FillRect(xposright, float64(drawing.ClipArea.O.Y), float64(drawing.ClipArea.Width)-xposright, float64(drawing.ClipArea.Height))
@@ -105,7 +115,8 @@ func moveButton(layer *DrawingTimeSelector, button *Rect, xcenter float64, ycent
 
 // OnMouseDown starts dragging buttons
 func (drawing *DrawingTimeSelector) OnMouseDown(xy Point, event *htmlevent.MouseEvent) {
-	//fmt.Printf("%q mousedown xy:%v, frombutton:%v, tobutton:%v\n", drawing.Name, xy, drawing.fromButton, drawing.toButton) //DEBUG:
+
+	Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseDown xy:%v, frombutton:%v, tobutton:%v", drawing.Name, xy, drawing.buttonFrom, drawing.buttonTo))
 
 	// if already dragging and reenter into the canvas
 	if drawing.dragFrom || drawing.dragTo {
@@ -126,10 +137,11 @@ func (drawing *DrawingTimeSelector) OnMouseDown(xy Point, event *htmlevent.Mouse
 //
 // If the timeselection changes then the event dispatcher will call OnChangeTimeSelection on all drawings of all layers.
 func (drawing *DrawingTimeSelector) OnMouseUp(xy Point, event *htmlevent.MouseEvent) {
-	//fmt.Printf("%q mouseup xy:%v\n", drawing.Name, xy) //DEBUG:
 
 	// update the chart time selection
-	drawing.Layer.selectedTimeSlice = drawing.timeSelection
+	drawing.chart.selectedTimeSlice = drawing.dragtimeSelection
+
+	Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseUp xy:%v, timeselection:%v", drawing.Name, xy, drawing.dragtimeSelection))
 
 	// reset drag flag
 	drawing.dragFrom = false
@@ -138,13 +150,15 @@ func (drawing *DrawingTimeSelector) OnMouseUp(xy Point, event *htmlevent.MouseEv
 
 // OnMouseMove change the cursor when hovering a button, or change the local timeslice selection if dragging the buttons.
 //
-// If the timeselection changes then the event dispatcher will call OnChangeTimeSelection on all drawings of all layers.
+// If the local timeselection changes then redraw this drawing only
+// the event dispatcher won't call DoChange as the chart selection has not changed
 func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.MouseEvent) {
-	//fmt.Printf("%q mousemove xy:%v\n", pdrawing.Name xy) //DEBUG:
 	if drawing.xAxisRange == nil {
-		log.Printf("OnMouseMove %q fails: missing data", drawing.Name)
+		Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseMove fails, missing data", drawing.Name))
 		return
 	}
+
+	//	Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseMove xy:%v", drawing.Name, xy))
 
 	// change cursor if we start overing a button
 	if (xy.IsIn(drawing.buttonFrom) || xy.IsIn(drawing.buttonTo)) && !drawing.isResizeCursor {
@@ -162,16 +176,18 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 	if drawing.dragFrom {
 		rate := drawing.ClipArea.XRate(xy.X)
 		postime := drawing.xAxisRange.WhatTime(rate)
-		if postime.Before(drawing.Layer.selectedTimeSlice.To.Add(-drawing.MinZoomTime)) {
-			drawing.timeSelection.FromMove(postime, true)
-			drawing.Redraw()
+		if postime.Before(drawing.dragtimeSelection.To.Add(-drawing.MinZoomTime)) {
+			drawing.dragtimeSelection.FromMove(postime, true)
+			drawing.Clear()
+			drawing.redraw()
 		}
 	} else if drawing.dragTo {
 		rate := drawing.ClipArea.XRate(xy.X)
 		postime := drawing.xAxisRange.WhatTime(rate)
-		if postime.After(drawing.Layer.selectedTimeSlice.From.Add(drawing.MinZoomTime)) {
-			drawing.timeSelection.ToMove(postime, true)
-			drawing.Redraw()
+		if postime.After(drawing.dragtimeSelection.From.Add(drawing.MinZoomTime)) {
+			drawing.dragtimeSelection.ToMove(postime, true)
+			drawing.Clear()
+			drawing.redraw()
 		}
 	}
 }
@@ -179,66 +195,75 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 // OnWheel manage zoom and shifting the time selection
 func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
+		Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel fails, missing data", drawing.Name))
 		return
 	}
 
-	tsel := &drawing.timeSelection
-
 	// define a good timestep: 20% of the current duration
-	timeStep := timeline.Nanoseconds(float64(tsel.Duration().Duration) * float64(0.2))
-	//fmt.Printf("wheel shiftK=%v, dy=%f, timeStep=%v\n", event.ShiftKey(), dy, timeStep) // DEBUG:
+	timeStep := timeline.Nanoseconds(float64(drawing.dragtimeSelection.Duration().Duration) * float64(0.2))
 
 	// get the wheel move
 	dy := event.DeltaY()
+
+	Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, shiftK:%v, dy:%f, timeStep:%v", drawing.Name, event.ShiftKey(), dy, timeStep))
+
 	if event.ShiftKey() {
 		// move mode: shift the selection
+		d := drawing.dragtimeSelection.Duration()
 		if dy < 0 {
 			// move to the future
-			d := tsel.Duration()
-			tsel.To = tsel.To.Add(timeStep.Duration)
-			tsel.From = tsel.From.Add(timeStep.Duration)
-			if tsel.To.After(drawing.xAxisRange.To) {
-				tsel.To = drawing.xAxisRange.To
-				tsel.From = tsel.To.Add(-d.Duration)
+			drawing.dragtimeSelection.Shift(timeline.NewDuration(timeStep.Duration))
+			if drawing.dragtimeSelection.To.After(drawing.xAxisRange.To) {
+				drawing.dragtimeSelection.To = drawing.xAxisRange.To
+				drawing.dragtimeSelection.From = drawing.xAxisRange.To.Add(-d.Duration)
 			}
-			if tsel.From.After(drawing.series.Head.From) {
-				tsel.From = drawing.series.Head.From
+			if drawing.dragtimeSelection.From.After(drawing.series.Head.From) {
+				drawing.dragtimeSelection.From = drawing.series.Head.From
 			}
+
+			Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, shift forward newsel=%v", drawing.Name, drawing.dragtimeSelection))
+
 		} else if dy > 0 {
 			// move to the past
-			d := tsel.Duration()
-			tsel.From = tsel.From.Add(-timeStep.Duration)
-			tsel.To = tsel.To.Add(-timeStep.Duration)
-			if tsel.From.Before(drawing.xAxisRange.From) {
-				tsel.From = drawing.xAxisRange.From
-				tsel.To = tsel.From.Add(d.Duration)
+			drawing.dragtimeSelection.Shift(timeline.NewDuration(-timeStep.Duration))
+			if drawing.dragtimeSelection.From.Before(drawing.xAxisRange.From) {
+				drawing.dragtimeSelection.From = drawing.xAxisRange.From
+				drawing.dragtimeSelection.To = drawing.xAxisRange.From.Add(d.Duration)
+
+				Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, shift backward newsel=%v", drawing.Name, drawing.dragtimeSelection))
 			}
 		}
 	} else {
 		// zoom mode: move the 'From' time only
 		if dy > 0 {
-			// zoom+ > reduce the timeslice, but no more than the tsel.To duration
-			//fmt.Printf("zoom- mind=%s, at:%s, timeStep=%v\n", mind, at, timeStep) // DEBUG:
-			tsel.From = tsel.From.Add(timeStep.Duration)
-			if tsel.From.Add(drawing.MinZoomTime).After(tsel.To) {
-				tsel.From = tsel.To.Add(-drawing.MinZoomTime)
+			// zoom+ > reduce the timeslice, but no more than the drawing.timeSelection.To duration
+
+			drawing.dragtimeSelection.From = drawing.dragtimeSelection.From.Add(timeStep.Duration)
+			if drawing.dragtimeSelection.From.Add(drawing.MinZoomTime).After(drawing.dragtimeSelection.To) {
+				drawing.dragtimeSelection.From = drawing.dragtimeSelection.To.Add(-drawing.MinZoomTime)
 			}
-			if tsel.From.After(drawing.series.Head.From) {
-				tsel.From = drawing.series.Head.From
+			if drawing.dragtimeSelection.From.After(drawing.series.Head.From) {
+				drawing.dragtimeSelection.From = drawing.series.Head.From
 			}
+
+			Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, zoom+ newsel=%v", drawing.Name, drawing.dragtimeSelection))
+
 		} else if dy < 0 {
 			// zoom- > enlarge the timeslice
-			//fmt.Printf("zoom+ timeStep=%v\n", timeStep) // DEBUG:
-			tsel.From = tsel.From.Add(-timeStep.Duration)
-			if tsel.From.Before(drawing.xAxisRange.From) {
-				tsel.From = drawing.xAxisRange.From
+			drawing.dragtimeSelection.From = drawing.dragtimeSelection.From.Add(-timeStep.Duration)
+			if drawing.dragtimeSelection.From.Before(drawing.xAxisRange.From) {
+				drawing.dragtimeSelection.From = drawing.xAxisRange.From
 			}
+
+			Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, zoom- newsel=%v", drawing.Name, drawing.dragtimeSelection))
 		}
 	}
 
-	// update the chart time selection
-	drawing.Layer.selectedTimeSlice = *tsel
+	// update the chart selected timeslice
+	// the event dispatrcher will not propagate the change here because we will answer NoNeed To redraw
+	// so force a clear and a local redraw
+	drawing.chart.selectedTimeSlice = drawing.dragtimeSelection
 
-	// redraw the timeselector only !
-	//drawing.Redraw() // HACK:
+	drawing.Clear()
+	drawing.redraw()
 }

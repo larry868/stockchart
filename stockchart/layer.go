@@ -30,26 +30,22 @@ type Layer struct {
 	ClipArea Rect
 	Ctx2D    *canvas.CanvasRenderingContext2D
 
-	id      string                   // the id of the layer, for debugging purpose
+	Name      string                   // the name of the layer, for debugging purpose
 	chart   *StockChart              // the parent chart
 	canvasE canvas.HTMLCanvasElement // the <canvas> element of this layer
 	layout  layoutT                  // The layout of this layer within the chart
 
 	xAxisRange *timeline.TimeSlice // the timeslice to show and draw on this layer
 	drawings   []*Drawing          // stack of drawings
-
-	selectedTimeSlice timeline.TimeSlice // the current time slice selected on the layer, IsZero if none
-	selectedData      *DataStock         // the current data selected on the layer, nil if none
 }
 
 func NewLayer(id string, chart *StockChart, layout layoutT, xaxisrange *timeline.TimeSlice, canvasE canvas.HTMLCanvasElement) *Layer {
 	layer := new(Layer)
-	layer.id = strings.ToLower(strings.Trim(id, " "))
+	layer.Name = strings.ToLower(strings.Trim(id, " "))
 	layer.chart = chart
 	layer.layout = layout
 	layer.xAxisRange = xaxisrange
 	layer.canvasE = canvasE
-	layer.selectedTimeSlice = chart.selectedTimeSlice
 	return layer
 }
 
@@ -64,7 +60,7 @@ func (layer *Layer) AddDrawing(d *Drawing, bgcolor rgb.Color) {
 
 // Default string interface
 func (layer Layer) String() string {
-	str := fmt.Sprintf("%q canvasE:%p, ctx2D:%p area:{%v} nb drawings:%d", layer.id, &layer.canvasE, layer.Ctx2D, layer.ClipArea, len(layer.drawings))
+	str := fmt.Sprintf("%q canvasE:%p, ctx2D:%p area:{%v} nb drawings:%d", layer.Name, &layer.canvasE, layer.Ctx2D, layer.ClipArea, len(layer.drawings))
 	return str
 }
 
@@ -79,25 +75,26 @@ func (layer *Layer) SetEventDispatcher() {
 	var oldselts timeline.TimeSlice
 	var oldseldata *DataStock
 	processSelChange := func() {
-		if oldselts.Compare(layer.selectedTimeSlice) == timeline.DIFFERENT {
-			layer.chart.DoSelChangeTimeSlice(layer.chart.MainSeries.Name, layer.selectedTimeSlice, true)
+		if oldselts.Compare(layer.chart.selectedTimeSlice) == timeline.DIFFERENT {
+			layer.chart.DoSelChangeTimeSlice(layer.chart.MainSeries.Name, layer.chart.selectedTimeSlice, true)
 		}
-		if oldseldata != layer.selectedData {
-			layer.chart.DoSelChangeData(layer.chart.MainSeries.Name, layer.selectedData, true)
+		if oldseldata != layer.chart.selectedData {
+			layer.chart.DoSelChangeData(layer.chart.MainSeries.Name, layer.chart.selectedData, true)
 		}
 	}
 
 	// Define functions to capture mouse events on this layer,
 	// only if the layer contains at least one mouse function on its drawings
 	hme := layer.HandledEvents()
-	fmt.Printf("layer %q, mouse event handled=%08b\n", layer.id, hme) // DEBUG:
+
+	Debug(DBG_EVENT, fmt.Sprintf("%q layer, SetEventDispatcher event handled=%08b ", layer.Name, hme))
 
 	if (hme & evt_MouseDown) != 0 {
 		layer.canvasE.SetOnMouseDown(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMouseXY(event)
 			if xy.IsIn(layer.ClipArea) {
-				oldselts = layer.selectedTimeSlice
-				oldseldata = layer.selectedData
+				oldselts = layer.chart.selectedTimeSlice
+				oldseldata = layer.chart.selectedData
 				for _, drawing := range layer.drawings {
 					if drawing.OnMouseDown != nil {
 						drawing.OnMouseDown(xy, event)
@@ -111,8 +108,8 @@ func (layer *Layer) SetEventDispatcher() {
 	if (hme & evt_MouseUp) != 0 {
 		layer.canvasE.SetOnMouseUp(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMouseXY(event)
-			oldselts = layer.selectedTimeSlice
-			oldseldata = layer.selectedData
+			oldselts = layer.chart.selectedTimeSlice
+			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseUp != nil {
 					drawing.OnMouseUp(xy, event)
@@ -125,8 +122,8 @@ func (layer *Layer) SetEventDispatcher() {
 	if (hme & evt_MouseMove) != 0 {
 		layer.canvasE.SetOnMouseMove(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMouseXY(event)
-			oldselts = layer.selectedTimeSlice
-			oldseldata = layer.selectedData
+			oldselts = layer.chart.selectedTimeSlice
+			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseMove != nil {
 					drawing.OnMouseMove(xy, event)
@@ -139,8 +136,8 @@ func (layer *Layer) SetEventDispatcher() {
 	if (hme & evt_MouseEnter) != 0 {
 		layer.canvasE.SetOnMouseEnter(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMouseXY(event)
-			oldselts = layer.selectedTimeSlice
-			oldseldata = layer.selectedData
+			oldselts = layer.chart.selectedTimeSlice
+			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseEnter != nil {
 					drawing.OnMouseEnter(xy, event)
@@ -153,8 +150,8 @@ func (layer *Layer) SetEventDispatcher() {
 	if (hme & evt_MouseLeave) != 0 {
 		layer.canvasE.SetOnMouseLeave(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMouseXY(event)
-			oldselts = layer.selectedTimeSlice
-			oldseldata = layer.selectedData
+			oldselts = layer.chart.selectedTimeSlice
+			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseLeave != nil {
 					drawing.OnMouseLeave(xy, event)
@@ -166,13 +163,14 @@ func (layer *Layer) SetEventDispatcher() {
 
 	if (hme & evt_Wheel) != 0 {
 		layer.canvasE.SetOnWheel(func(event *htmlevent.WheelEvent, currentTarget *html.HTMLElement) {
-			oldselts = layer.selectedTimeSlice
-			oldseldata = layer.selectedData
+			oldselts = layer.chart.selectedTimeSlice
+			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
-				if drawing.OnMouseUp != nil {
+				if drawing.OnWheel != nil {
 					drawing.OnWheel(event)
 				}
 			}
+			Debug(DBG_SELCHANGE, fmt.Sprintf("OnWheel dispatcher: last %s, new %s", oldselts.String(), layer.chart.selectedTimeSlice.String() ))
 			processSelChange()
 		})
 	}
@@ -180,8 +178,8 @@ func (layer *Layer) SetEventDispatcher() {
 	if (hme & evt_Click) != 0 {
 		layer.canvasE.SetOnClick(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMouseXY(event)
-			oldselts = layer.selectedTimeSlice
-			oldseldata = layer.selectedData
+			oldselts = layer.chart.selectedTimeSlice
+			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnClick != nil {
 					drawing.OnClick(xy, event)
@@ -224,8 +222,8 @@ func (layer *Layer) Resize(newarea Rect) {
 	layer.ClipArea.Width = dbuffwidth
 	layer.ClipArea.Height = dbuffheight
 
-	// fmt.Printf("Resizing layer %v ", player.String()) //DEBUG:
-	// fmt.Printf("dpr=%f drawbuffw=%v, drawbuffh=%v\n", dpr, dbuffwidth, dbuffheight) //DEBUG:
+	
+	Debug(DBG_RESIZE, fmt.Sprintf("%q layer, Resize dpr=%f drawbuffw=%v, drawbuffh=%v", layer.Name, dpr, dbuffwidth, dbuffheight))
 
 	// TODO: do not redraw if the size has not changed
 	layer.Redraw()
@@ -252,15 +250,13 @@ func (layer *Layer) RedrawOnlyNeeds() {
 	for _, drawing := range layer.drawings {
 		if drawing.NeedRedraw != nil {
 			need := drawing.NeedRedraw()
-			fmt.Printf("RedrawOnlyNeeds drawing:%s, NeedRedraw:%v\n", drawing.id, need) // DEBUG:
+
+			Debug(DBG_SELCHANGE | DBG_REDRAW, fmt.Sprintf("%q/%q layer/drawing, RedrawOnlyNeeds NeedRedraw:%v", layer.Name, drawing.Name, need))
+
 			if need {
 				layer.Redraw()
 				break
 			}
 		}
 	}
-
-	// update selection on the layer
-	layer.selectedTimeSlice = layer.chart.selectedTimeSlice
-	layer.selectedData = layer.chart.selectedData
 }

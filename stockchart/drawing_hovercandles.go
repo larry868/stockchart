@@ -40,17 +40,15 @@ func NewDrawingHoverCandles(series *DataList) *DrawingHoverCandles {
 // draw the line over the candle where the mouse is
 func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.MouseEvent) {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		// log.Printf("OnMouseMove %q fails: unable to proceed given data", drawing.Name) DEBUG:
+		Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseMove fails, missing data", drawing.Name))
 		return
 	}
-	//fmt.Printf("%q mousemove xy:%v\n", drawing.Name, xy) //DEBUG:
 
 	// get the candle
 	trate := drawing.ClipArea.XRate(xy.X)
 	postime := drawing.xAxisRange.WhatTime(trate)
 	hoverData := drawing.series.GetDataAt(postime)
 	if postime.IsZero() || hoverData == nil {
-		// fmt.Println("no data at this position") // DEBUG//
 		return
 	}
 
@@ -82,17 +80,18 @@ func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.Mouse
 func (drawing *DrawingHoverCandles) OnClick(xy Point, event *htmlevent.MouseEvent) {
 
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		drawing.Layer.selectedData = nil
+		drawing.chart.selectedData = nil
+		Debug(DBG_EVENT, fmt.Sprintf("%q OnClick fails, missing data", drawing.Name))
 		return
 	}
 
 	// get the candle
 	trate := drawing.ClipArea.XRate(xy.X)
 	postime := drawing.xAxisRange.WhatTime(trate)
-	drawing.Layer.selectedData = drawing.series.GetDataAt(postime)
-	if postime.IsZero() || drawing.Layer.selectedData == nil {
-		fmt.Printf("%q click xy:%v ==> no data found at this position", drawing.Name, xy) //DEBUG:
+	drawing.chart.selectedData = drawing.series.GetDataAt(postime)
+	if postime.IsZero() || drawing.chart.selectedData == nil {
+		Debug(DBG_EVENT, fmt.Sprintf("%q OnClick xy:%v ==> no data found at this position", drawing.Name, xy))
 	} else {
-		fmt.Printf("%q click xy:%v ==> %s", drawing.Name, xy, drawing.Layer.selectedData.String()) //DEBUG:
+		Debug(DBG_EVENT, fmt.Sprintf("%q OnClick xy:%v ==> %s", drawing.Name, xy, drawing.chart.selectedData.String()))
 	}
 }

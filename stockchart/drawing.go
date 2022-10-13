@@ -113,7 +113,6 @@ func (drawing *Drawing) DrawTextBox(txt string, xy Point, align Align, color rgb
 
 	// build the txtbox
 	txtbox := bgbox.Shrink(margin+border/2.0, margin+border/2.0)
-	//fmt.Printf("cliparea:%v, txtbox:%v, bgbox:%v halfpixel:%v\n", drawing.ClipArea, txtbox, bgbox, halfpix) // DEBUG:
 
 	// draw the box and its frame
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(rgb.None.Hexa())})

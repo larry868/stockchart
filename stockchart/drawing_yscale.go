@@ -1,6 +1,8 @@
 package stockchart
 
 import (
+	"fmt"
+
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/datarange"
@@ -32,28 +34,28 @@ func NewDrawingYGrid(series *DataList, fscale bool) *DrawingYGrid {
 // OnRedraw redraw the Y axis
 func (drawing *DrawingYGrid) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		// log.Printf("OnRedraw %q fails: unable to proceed given data", drawing.Name) // DEBUG:
+		Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw fails: unable to proceed given data", drawing.Name))
 		return
 	}
-	//fmt.Printf("OnRedraw %q starting...\n", drawing) //DEBUG:
+
+	
+	// reduce the cliping area
+	clipArea := drawing.ClipArea.Shrink(0, 5)
+	clipArea.Height -= 15
+	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
+	
+	Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v\n", drawing.Name, drawing.ClipArea, drawing.xAxisRange.String(), yrange))
 
 	// setup default text drawing properties
 	drawing.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
 	drawing.Ctx2D.SetTextBaseline(canvas.MiddleCanvasTextBaseline)
 	drawing.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
-
-	// reduce the cliping area
-	clipArea := drawing.ClipArea.Shrink(0, 5)
-	clipArea.Height -= 15
-
+	
 	// draw the Y Scale
-	drawing.lastyrange = drawing.series.DataRange(drawing.xAxisRange, 10)
-	//fmt.Printf("DataRange %v\n", yrange) //DEBUG:
-
-	for val := drawing.lastyrange.High(); val >= drawing.lastyrange.Low() && drawing.lastyrange.StepSize() > 0; val -= drawing.lastyrange.StepSize() {
+	for val := yrange.High(); val >= yrange.Low() && yrange.StepSize() > 0; val -= yrange.StepSize() {
 
 		// calculate ypos
-		yrate := drawing.lastyrange.Progress(val)
+		yrate := yrange.Progress(val)
 		ypos := float64(clipArea.End().Y) - yrate*float64(clipArea.Height)
 		ypos = float64(clipArea.BoundY(int(ypos)))
 
@@ -67,9 +69,11 @@ func (drawing *DrawingYGrid) OnRedraw() {
 
 		// draw yscale label
 		if drawing.fScale {
-			strvalue := datarange.FormatData(val, drawing.lastyrange.StepSize()) // fmt.Sprintf("%.1f", val)
+			strvalue := datarange.FormatData(val, yrange.StepSize()) // fmt.Sprintf("%.1f", val)
 			drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(rgb.Gray.Darken(0.5).Hexa())})
 			drawing.Ctx2D.FillText(strvalue, float64(clipArea.O.Y+7), ypos+1, nil)
 		}
 	}
+
+	drawing.lastyrange = yrange
 }

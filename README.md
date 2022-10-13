@@ -71,7 +71,7 @@ The drawingLayer struct handle the layout of the layer and embed a stack of draw
 Overall drawing is breakdown in multiple functionnal drawings, each one added to one or many layers. 
 Functionnal drawings are based on the drawing stuct providing some drawing primitives and embedding the series of data to draw.
 
-![layers and modules](layersndrawings.png)
+![layers and modules](stockchart/layersndrawings.png)
 
 [see more technical here](doc.md)
 
@@ -84,6 +84,7 @@ Go provides a specific js file called `wasm_exec.js` that need to be served by y
 ## Change log
 
 - v0.7.0 alpha: major change in management of selection, now works with request out of the chart
+	- new feat, candle selection is displayed and stock on the navbar and on the chart 
 - v0.6.1 alpha: upgrade with timeline v2.2.1
 - v0.6.0 alpha: handle click event to select a data, fire func on select
 - v0.5.0 alpha: fix + enhance series list
@@ -93,7 +94,7 @@ Go provides a specific js file called `wasm_exec.js` that need to be served by y
 - v0.2.0 alpha: X time axis cursor position in the graph area
 - v0.1.0 alpha: 1st try
 
-Code may contains lines commented with `// DEBUG:` for debug purpose only.
+V0.7.0 introduces a debug function to easily generate output, see [debug.go](stockchart/debug.go) file
 
 ## References
 

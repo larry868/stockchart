@@ -41,7 +41,7 @@ func (chart StockChart) String() string {
 	str := fmt.Sprintf("%s\n", chart.ID)
 	for _, player := range chart.layers {
 		if player != nil {
-			str += fmt.Sprintf("  layer %22s: %p\n", player.id, player)
+			str += fmt.Sprintf("  layer %22s: %p\n", player.Name, player)
 			for _, pdrawing := range player.drawings {
 				if pdrawing != nil {
 					str += fmt.Sprintf("    drawing %18s: %p series:%p %v\n", pdrawing.Name, pdrawing, &pdrawing.series, pdrawing.series)
@@ -60,7 +60,8 @@ func (chart StockChart) String() string {
 // Update timeselection if required. If the timeselection change the RedrawOnlyNeeds
 // Returns the setup timerange
 func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendCoef float64) timeline.TimeSlice {
-	fmt.Println("SetTimeRange", timerange)
+
+	Debug(DBG_SELCHANGE, fmt.Sprintf("SetTimeRange %s", timerange))
 
 	if timerange.Duration().IsFinite && extendCoef > 0 {
 		timerange.ToExtend(timeline.Nanoseconds(float64(timerange.Duration().Duration) * extendCoef))
@@ -210,7 +211,7 @@ func (pchart *StockChart) Resize() {
 	masterw := int(cr.Width())
 	masterh := int(cr.Height())
 	if cr.Width() <= 0 || cr.Height() <= 0 {
-		fmt.Printf("chart %q no sizable", pchart.ID)
+		log.Printf("chart %q no sizable", pchart.ID)
 		return
 	}
 
@@ -261,7 +262,7 @@ func (pchart *StockChart) Resize() {
 // Do not need to be called after a resize as layers automatically redrawn themselves
 func (pchart *StockChart) Redraw() {
 	if pchart.isDrawing {
-		fmt.Println("new redraw request canceled. drawing still in progress")
+		log.Println("/!\\ Redraw request canceled. drawing still in progress")
 		return
 	}
 	pchart.isDrawing = true
@@ -278,7 +279,7 @@ func (pchart *StockChart) Redraw() {
 // Do not need to be called after a resize as layers automatically redrawn themselves
 func (pchart *StockChart) RedrawOnlyNeeds() {
 	if pchart.isDrawing {
-		fmt.Println("RedrawOnlyNeeds request canceled. drawing still in progress")
+		log.Println("/!\\ RedrawOnlyNeeds request canceled. drawing still in progress")
 		return
 	}
 	pchart.isDrawing = true
@@ -297,11 +298,11 @@ func (pchart *StockChart) RedrawOnlyNeeds() {
 //
 // call OnDoChangeTimeSelection if setup
 func (pchart *StockChart) DoSelChangeTimeSlice(strpair string, newts timeline.TimeSlice, fNotify bool) {
-	if pchart.isDrawing {
-		fmt.Println("DoChangeTimeSelection request canceled. drawing still in progress")
-		return
-	}
+
 	pchart.selectedTimeSlice = newts
+
+	Debug(DBG_SELCHANGE, fmt.Sprintf("DoSelChangeTimeSlice: %s", newts.String()))
+
 	pchart.RedrawOnlyNeeds()
 
 	if pchart.NotifySelChangeTimeSlice != nil && fNotify {
@@ -310,12 +311,10 @@ func (pchart *StockChart) DoSelChangeTimeSlice(strpair string, newts timeline.Ti
 }
 
 func (pchart *StockChart) DoSelChangeData(strpair string, newdata *DataStock, fNotify bool) {
-	if pchart.isDrawing {
-		fmt.Println("DoSelectData request canceled. drawing still in progress")
-		return
-	}
-
 	pchart.selectedData = newdata
+
+	Debug(DBG_SELCHANGE, fmt.Sprintf("DoSelChangeData: %p %s", newdata, newdata.String()))
+
 	pchart.RedrawOnlyNeeds()
 
 	if pchart.NotifySelChangeData != nil && fNotify {
