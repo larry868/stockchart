@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/sunraylab/rgb/v2"
 	"github.com/sunraylab/timeline/v2"
@@ -64,7 +65,7 @@ func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendCoef 
 	Debug(DBG_SELCHANGE, fmt.Sprintf("SetTimeRange %s", timerange))
 
 	if timerange.Duration().IsFinite && extendCoef > 0 {
-		timerange.ToExtend(timeline.Nanoseconds(float64(timerange.Duration().Duration) * extendCoef))
+		timerange.ExtendTo(timerange.Duration().Duration * time.Duration(extendCoef))
 	}
 
 	//fstuck := pchart.timeRange.To.Equal(pchart.selectedTimeSlice.To)

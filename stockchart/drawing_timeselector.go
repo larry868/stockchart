@@ -22,7 +22,7 @@ type DrawingTimeSelector struct {
 
 	dragtimeSelection timeline.TimeSlice // locally updated. The chart.timeSelection is only updated when the drag end
 
-	MinZoomTime time.Duration // minute by defailt, can be changed
+	MinZoomTime time.Duration // 5 minutes by default, can be changed
 }
 
 // Drawing factory
@@ -35,7 +35,7 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 	drawing.buttonFrom.Height = 30
 	drawing.buttonTo.Width = 8
 	drawing.buttonTo.Height = 30
-	drawing.MinZoomTime = time.Minute
+	drawing.MinZoomTime = time.Minute * 5
 
 	drawing.Drawing.OnRedraw = func() {
 		drawing.OnRedraw()
@@ -172,22 +172,32 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 		drawing.isResizeCursor = false
 	}
 
-	// change the selector
-	if drawing.dragFrom {
-		rate := drawing.ClipArea.XRate(xy.X)
-		postime := drawing.xAxisRange.WhatTime(rate)
-		if postime.Before(drawing.dragtimeSelection.To.Add(-drawing.MinZoomTime)) {
-			drawing.dragtimeSelection.FromMove(postime, true)
-			drawing.Clear()
-			drawing.redraw()
+	if drawing.dragFrom || drawing.dragTo {
+		fRedraw := false
+		// change the boundary of the selector
+		// get and bound the position of the cursor within xAxisRange
+		xrate := drawing.ClipArea.XRate(xy.X)
+		postime := drawing.xAxisRange.WhatTime(xrate)
+		postime = drawing.xAxisRange.Bound(postime)
+
+		if drawing.dragFrom {
+			// ensure the position is not over the right boundary minus the MinZoomTime
+			if postime.Before(drawing.dragtimeSelection.To.Add(-drawing.MinZoomTime)) {
+				drawing.dragtimeSelection.MoveFromAt(postime)
+				fRedraw = true
+			}
+		} else if drawing.dragTo {
+			// ensure the position is not over the left boundary plus the MinZoomTime
+			if postime.After(drawing.dragtimeSelection.From.Add(drawing.MinZoomTime)) {
+				drawing.dragtimeSelection.MoveToAt(postime)
+				fRedraw = true
+			}
 		}
-	} else if drawing.dragTo {
-		rate := drawing.ClipArea.XRate(xy.X)
-		postime := drawing.xAxisRange.WhatTime(rate)
-		if postime.After(drawing.dragtimeSelection.From.Add(drawing.MinZoomTime)) {
-			drawing.dragtimeSelection.ToMove(postime, true)
+
+		if fRedraw {
 			drawing.Clear()
 			drawing.redraw()
+
 		}
 	}
 }
@@ -199,71 +209,50 @@ func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 		return
 	}
 
-	// define a good timestep: 20% of the current duration
-	timeStep := timeline.Nanoseconds(float64(drawing.dragtimeSelection.Duration().Duration) * float64(0.2))
-
 	// get the wheel move
+	dir := time.Duration(0)
 	dy := event.DeltaY()
-
-	Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, shiftK:%v, dy:%f, timeStep:%v", drawing.Name, event.ShiftKey(), dy, timeStep))
-
-	if event.ShiftKey() {
-		// move mode: shift the selection
-		d := drawing.dragtimeSelection.Duration()
-		if dy < 0 {
-			// move to the future
-			drawing.dragtimeSelection.Shift(timeline.NewDuration(timeStep.Duration))
-			if drawing.dragtimeSelection.To.After(drawing.xAxisRange.To) {
-				drawing.dragtimeSelection.To = drawing.xAxisRange.To
-				drawing.dragtimeSelection.From = drawing.xAxisRange.To.Add(-d.Duration)
-			}
-			if drawing.dragtimeSelection.From.After(drawing.series.Head.From) {
-				drawing.dragtimeSelection.From = drawing.series.Head.From
-			}
-
-			Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, shift forward newsel=%v", drawing.Name, drawing.dragtimeSelection))
-
-		} else if dy > 0 {
-			// move to the past
-			drawing.dragtimeSelection.Shift(timeline.NewDuration(-timeStep.Duration))
-			if drawing.dragtimeSelection.From.Before(drawing.xAxisRange.From) {
-				drawing.dragtimeSelection.From = drawing.xAxisRange.From
-				drawing.dragtimeSelection.To = drawing.xAxisRange.From.Add(d.Duration)
-
-				Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, shift backward newsel=%v", drawing.Name, drawing.dragtimeSelection))
-			}
-		}
-	} else {
-		// zoom mode: move the 'From' time only
-		if dy > 0 {
-			// zoom+ > reduce the timeslice, but no more than the drawing.timeSelection.To duration
-
-			drawing.dragtimeSelection.From = drawing.dragtimeSelection.From.Add(timeStep.Duration)
-			if drawing.dragtimeSelection.From.Add(drawing.MinZoomTime).After(drawing.dragtimeSelection.To) {
-				drawing.dragtimeSelection.From = drawing.dragtimeSelection.To.Add(-drawing.MinZoomTime)
-			}
-			if drawing.dragtimeSelection.From.After(drawing.series.Head.From) {
-				drawing.dragtimeSelection.From = drawing.series.Head.From
-			}
-
-			Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, zoom+ newsel=%v", drawing.Name, drawing.dragtimeSelection))
-
-		} else if dy < 0 {
-			// zoom- > enlarge the timeslice
-			drawing.dragtimeSelection.From = drawing.dragtimeSelection.From.Add(-timeStep.Duration)
-			if drawing.dragtimeSelection.From.Before(drawing.xAxisRange.From) {
-				drawing.dragtimeSelection.From = drawing.xAxisRange.From
-			}
-
-			Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, zoom- newsel=%v", drawing.Name, drawing.dragtimeSelection))
-		}
+	if dy > 0 {
+		dir = -1
+	} else if dy < 0 {
+		dir = 1
+	}
+	if dir == 0 {
+		return
 	}
 
+	// define a good timestep: 20% of the current duration
+	timeStep := drawing.dragtimeSelection.Duration().Adjust(0.2).Duration
+	Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, shiftKey:%v, dy:%f, timeStep:%v", drawing.Name, event.ShiftKey(), dy, timeStep))
+
+	if event.ShiftKey() {
+		// shift mode, shift to the future or to the past according to dir
+		drawing.dragtimeSelection.ShiftIn(timeStep*dir, *drawing.xAxisRange)
+	} else {
+		// zoom mode
+		oldfrom := drawing.dragtimeSelection.From
+		drawing.dragtimeSelection.ExtendFrom(timeStep * dir)
+		drawing.dragtimeSelection.From = drawing.xAxisRange.Bound(drawing.dragtimeSelection.From)
+		if drawing.dragtimeSelection.Duration().Duration < drawing.MinZoomTime {
+			drawing.dragtimeSelection.From = drawing.dragtimeSelection.To.Add(-drawing.MinZoomTime)
+		} else if drawing.dragtimeSelection.From.Equal(oldfrom) {
+			// if from is at the limit then try to move to
+			drawing.dragtimeSelection.ExtendTo(timeStep * -dir)
+			drawing.dragtimeSelection.To = drawing.xAxisRange.Bound(drawing.dragtimeSelection.To)
+			if drawing.dragtimeSelection.Duration().Duration < drawing.MinZoomTime {
+				drawing.dragtimeSelection.To = drawing.dragtimeSelection.To.Add(drawing.MinZoomTime)
+			}
+		}
+
+	}
+
+	Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, newsel=%v", drawing.Name, drawing.dragtimeSelection))
+
 	// update the chart selected timeslice
-	// the event dispatrcher will not propagate the change here because we will answer NoNeed To redraw
-	// so force a clear and a local redraw
 	drawing.chart.selectedTimeSlice = drawing.dragtimeSelection
 
+	// the event dispatrcher will not propagate the change here because we need to keep the dragtimeSelection
+	// so force a clear and a local redraw
 	drawing.Clear()
 	drawing.redraw()
 }

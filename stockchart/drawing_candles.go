@@ -76,8 +76,8 @@ func (drawing DrawingCandles) OnRedraw() {
 	item := drawing.series.Tail
 	for item != nil {
 		// skip items out of range
-		d := item.Duration()
-		if item.To.Before(drawing.xAxisRange.From) || item.IsInfinite() || item.Duration().Duration == 0 {
+		d := float64(item.Duration().Duration)
+		if item.To.Before(drawing.xAxisRange.From) || item.IsInfinite() || d == 0.0 {
 			// scan next item
 			item = item.Next
 			continue
@@ -100,7 +100,7 @@ func (drawing DrawingCandles) OnRedraw() {
 
 		// x axis: time
 		rcandle.O.X = drawArea.O.X + int(math.Round(xfactor*float64(item.TimeSlice.From.Sub(drawing.xAxisRange.From))))
-		rcandle.Width = imax(1, int(math.Round(xfactor*float64(d.Duration))))
+		rcandle.Width = imax(1, int(math.Round(xfactor*d)))
 
 		// add padding between candles
 		xpadding := int(float64(rcandle.Width) * 0.1)

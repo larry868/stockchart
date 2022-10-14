@@ -6,3 +6,5 @@ github.com/sunraylab/rgb/v2 v2.0.2 h1:3NuQuA4oQHvzoZJ0b2Pu3/VJSrJvKETG2Kqcs0+MA7
 github.com/sunraylab/rgb/v2 v2.0.2/go.mod h1:OuV0mZOJ9XJqP7LOKZAl7NXNde59IOLFssOhvFlTQPM=
 github.com/sunraylab/timeline/v2 v2.2.2 h1:1/SGEsPOWJI2P6sjwt9paaJNvugRJMKPRnLkGsTREu8=
 github.com/sunraylab/timeline/v2 v2.2.2/go.mod h1:+NNSjWTWaJiLIxJcgqcdm2+0bgn7btzxnZJBVWp4BYo=
+github.com/sunraylab/timeline/v2 v2.3.0 h1:zDDFIeS3Khd5tMTp1HcT2p/iQnOEYNY3K+Y47rXMnlw=
+github.com/sunraylab/timeline/v2 v2.3.0/go.mod h1:+NNSjWTWaJiLIxJcgqcdm2+0bgn7btzxnZJBVWp4BYo=

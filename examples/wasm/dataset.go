@@ -47,7 +47,7 @@ func BuildRandomDataset() *stockchart.DataList {
 
 		// change the timeslice of a data point for the sample
 		if i == 25 {
-			p.TimeSlice.ToExtend(timeline.NewDuration(candleDuration * 3.0))
+			p.TimeSlice.ExtendTo(candleDuration * 3.0)
 		}
 
 		last = p.TimeSlice.To
