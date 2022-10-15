@@ -15,12 +15,15 @@ import (
 type DrawingTimeSelector struct {
 	Drawing
 
-	buttonFrom               Rect // coordinates of the button within the cliparea
-	buttonTo                 Rect // coordinates of the button within the cliparea
-	isResizeCursor           bool // is the cursor resize ?
-	dragFrom, dragTo, dragIn bool
+	buttonFrom     Rect // coordinates of the button within the cliparea
+	buttonTo       Rect // coordinates of the button within the cliparea
+	isCursorResize bool // is the cursor the resize one ?
+	isCursorGrab   bool // is the cursor the hand one ?
+
+	dragFrom, dragTo, dragIn, dragShift bool
 
 	dragtimeSelection timeline.TimeSlice // locally updated. The chart.timeSelection is only updated when the drag end
+	dragShiftlasttime time.Time
 
 	MinZoomTime time.Duration // 5 minutes by default, can be changed
 }
@@ -113,23 +116,34 @@ func moveButton(layer *DrawingTimeSelector, button *Rect, xcenter float64, ycent
 	button.O.Y = int(y0)
 }
 
-// OnMouseDown starts dragging buttons
+// OnMouseDown starts dragging
 func (drawing *DrawingTimeSelector) OnMouseDown(xy Point, event *htmlevent.MouseEvent) {
 
 	Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseDown xy:%v, frombutton:%v, tobutton:%v", drawing.Name, xy, drawing.buttonFrom, drawing.buttonTo))
 
 	// if already dragging and reenter into the canvas
-	if drawing.dragFrom || drawing.dragTo {
+	if drawing.dragFrom || drawing.dragTo || drawing.dragShift {
 		drawing.dragIn = true
 	} else {
 		drawing.dragIn = false
 	}
 
-	// do someting only if we're on a button
+	// Start draggin mode
 	if xy.IsIn(drawing.buttonFrom) {
 		drawing.dragFrom = true
 	} else if xy.IsIn(drawing.buttonTo) {
 		drawing.dragTo = true
+	} else if (xy.X > drawing.buttonFrom.End().X) && (xy.X < drawing.buttonTo.O.X) {
+		drawing.dragShift = true
+
+		if !drawing.isCursorGrab {
+			drawing.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`grab`)})
+			drawing.isCursorGrab = true
+			xrate := drawing.ClipArea.XRate(xy.X)
+			postime := drawing.xAxisRange.WhatTime(xrate)
+			postime = drawing.xAxisRange.Bound(postime)
+			drawing.dragShiftlasttime = postime
+		}
 	}
 }
 
@@ -146,6 +160,14 @@ func (drawing *DrawingTimeSelector) OnMouseUp(xy Point, event *htmlevent.MouseEv
 	// reset drag flag
 	drawing.dragFrom = false
 	drawing.dragTo = false
+	drawing.dragShift = false
+
+	// reset the cursor if needed
+	if drawing.isCursorGrab {
+		drawing.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`auto`)})
+		drawing.isCursorGrab = false
+		drawing.dragShiftlasttime = time.Time{}
+	}
 }
 
 // OnMouseMove change the cursor when hovering a button, or change the local timeslice selection if dragging the buttons.
@@ -161,18 +183,18 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 	//	Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseMove xy:%v", drawing.Name, xy))
 
 	// change cursor if we start overing a button
-	if (xy.IsIn(drawing.buttonFrom) || xy.IsIn(drawing.buttonTo)) && !drawing.isResizeCursor {
+	if (xy.IsIn(drawing.buttonFrom) || xy.IsIn(drawing.buttonTo)) && !drawing.isCursorResize {
 		drawing.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`col-resize`)})
-		drawing.isResizeCursor = true
+		drawing.isCursorResize = true
 	}
 
 	// change cursor if we leave a button
-	if (!xy.IsIn(drawing.buttonFrom) && !xy.IsIn(drawing.buttonTo)) && drawing.isResizeCursor {
+	if (!xy.IsIn(drawing.buttonFrom) && !xy.IsIn(drawing.buttonTo)) && drawing.isCursorResize {
 		drawing.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`auto`)})
-		drawing.isResizeCursor = false
+		drawing.isCursorResize = false
 	}
 
-	if drawing.dragFrom || drawing.dragTo {
+	if drawing.dragFrom || drawing.dragTo || drawing.dragShift {
 		fRedraw := false
 		// change the boundary of the selector
 		// get and bound the position of the cursor within xAxisRange
@@ -190,6 +212,14 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 			// ensure the position is not over the left boundary plus the MinZoomTime
 			if postime.After(drawing.dragtimeSelection.From.Add(drawing.MinZoomTime)) {
 				drawing.dragtimeSelection.MoveToAt(postime)
+				fRedraw = true
+			}
+		} else if drawing.dragShift {
+			// shift the selection according to the position of the grab selector
+			if !postime.Equal(drawing.dragShiftlasttime) {
+				shiftdur := postime.Sub(drawing.dragShiftlasttime)
+				drawing.dragShiftlasttime = postime
+				drawing.dragtimeSelection.ShiftIn(shiftdur, *drawing.xAxisRange)
 				fRedraw = true
 			}
 		}

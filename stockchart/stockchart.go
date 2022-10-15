@@ -80,15 +80,6 @@ func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendCoef 
 	return pchart.timeRange
 }
 
-// RedrawMainSeries sets the overall timeslice to display then redraw all the chart.
-// Based on the mainseries timeslice.
-// return the new timerange
-// func (pchart *StockChart) RedrawMainSeries() timeline.TimeSlice {
-// 	tr := pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), 0.1)
-// 	pchart.Redraw()
-// 	return tr
-// }
-
 // NewStockChart initialize a stockchart within the <stockchart> HTML element idenfied by chartid.
 // An HTML page can have multiple <stockchart> but with different chartid. The layout of the chart is composed of multiples layers which are stacked canvas.
 //
@@ -300,6 +291,11 @@ func (pchart *StockChart) RedrawOnlyNeeds() {
 // call OnDoChangeTimeSelection if setup
 func (pchart *StockChart) DoSelChangeTimeSlice(strpair string, newts timeline.TimeSlice, fNotify bool) {
 
+	if newts.IsZero() {
+		newts = pchart.timeRange
+	} else {
+		pchart.timeRange.BoundIn(&newts)
+	}
 	pchart.selectedTimeSlice = newts
 
 	Debug(DBG_SELCHANGE, fmt.Sprintf("DoSelChangeTimeSlice: %s", newts.String()))

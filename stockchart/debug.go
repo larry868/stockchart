@@ -16,6 +16,7 @@ const (
 // Change this global variable to activate debug mode
 var DEBUG = DBG_SELCHANGE | DBG_EVENT
 
+// if debug match with the DEBUG global flag, then Debug print out strprint
 func Debug(debug DebugOutput, strprint string) {
 	if DEBUG&debug > 0 {
 		fmt.Println(strprint)

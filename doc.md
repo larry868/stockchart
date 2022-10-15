@@ -3,23 +3,23 @@
 
 ## Selecting a timeslice and a datastock
 
-On a drawing user can select the timeslice and a single datastock.
+On a drawing user can select the time range, a time slice, and a single datastock.
 
-Theses informations are saved in `selectedTimeSlice` and `SelectedData` properties of the StockChart struct. These values reflects the selection in request for a drawing. That means that these value are updated before any rdraw and every leyers and drawing will use this value to redraw.
+Theses informations are saved in `selectedTimeSlice` and `selectedData` properties of the StockChart struct. These values reflects the selection in request for a drawing. That means that these values are used by the drawing process.
 
 They can be updated through an user interaction with the chart, like clicking on a data or changing the navebar selector, or they can be updated through an external request.
 
 ## Is there any selection ?
 
-selectedTimeSlice.IsZero() means there's no selectedTimeslice, which may occurs for an empty chart, otherwise the selected timeslice is always defined with valid boundaries.
+selectedTimeSlice.IsZero() means there's no selected time range, which may occurs for an empty chart, otherwise the selected timeslice is always defined with valid boundaries.
 
-for the SelectedData it's different, this is a pointer. A nil value indicate ther's no selection otherwise it points directly to the DataStock with the series.
+For the selectedData it's different, this is a pointer. A nil value indicate ther's no selection otherwise it points directly to the DataStock within the series.
 
 ## Initial Update
 
-``SetTimeRange()`` is called to setup the overall timeslice to display on the chart. It'ts called at least during the chart creation but can be reset later.
+``SetTimeRange()`` is called to setup the global time range of the chart. It's called at least during the chart creation and can be set later.
 
-``SetTimeRange()`` must updates the `selectedTimeSlice` to ensure a consistent selection. 
+``SetTimeRange()`` calls DoSelChangeTimeSlice to update the `selectedTimeSlice` with the overall time range of the chart. 
 
 ```go 
 - SetTimeRange()
@@ -38,15 +38,17 @@ for the SelectedData it's different, this is a pointer. A nil value indicate the
 
 ```
 
-If drawings layers are not created, then layers inits the selection data themself with the layer factory.
+If drawings layers are not created yet when calling SetTimeRange that's not important because each drawing will get the chart selection info to redraw themselfs.
 
 ## Update from outside of the chart
 
-A call to ``DoSelChangeTimeSlice()`` and ``DoSelChangeData()`` allows a redraw of all drawings if the change impact them.
+`DoSelChangeTimeSlice()` and ``DoSelChangeData()`` are the most important functions, they allows a redraw of all drawings if the change impact them.
 
 ## Updating with user interacting with the chart
 
-Drawings interact only with `selectedTimeSlice` and `selectedData` at the layer level. These values can be updated by the drawing in response to en event. In this case the event dispatcher will ensure to propagate the change to all layers and also to notify ourside of the chart.
+Drawings interact only with `selectedTimeSlice` and `selectedData` at the chart level. Some drawings stores a copy of the last selection  they use for a redraw, allowing them to know if they'are concerned by a future change. 
+
+At the end of the drawing process, the event dispatcher will detect a change in `selectedTimeSlice` or `selectedData` and will propagate a `DoSelChangeTimeSlice()` and ``DoSelChangeData()`` at the chart level to redraw layers that needs it.
 
 ### Propagation of the changed selection to other layers and other drawings
 

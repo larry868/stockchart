@@ -24,7 +24,10 @@ type DataStock struct {
 	Prev *DataStock `json:"-"` // going to the tail
 }
 
-func (dp DataStock) String() string {
+func (dp *DataStock) String() string {
+	if dp == nil {
+		return "nil"
+	}
 	str := fmt.Sprintf("o=%v h=%v l=%v c=%v v=%v at:%s\n", dp.Open, dp.High, dp.Low, dp.Close, dp.Volume, dp.TimeSlice)
 	return str
 }
