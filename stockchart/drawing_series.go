@@ -53,9 +53,9 @@ func (drawing *DrawingSeries) OnRedraw() {
 	drawArea := drawing.ClipArea.Shrink(0, 5)
 
 	// get xfactor & yfactor according to time selection
+	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
 	xfactor := float64(drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
-	yfactor := float64(drawArea.Height) / drawing.series.DataRange(drawing.xAxisRange, 10).Delta()
-	lowboundary := drawing.series.DataRange(drawing.xAxisRange, 10).Low()
+	yfactor := float64(drawArea.Height) / yrange.Delta()
 
 	Debug(DBG_REDRAW, fmt.Sprintf("%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawArea, drawing.xAxisRange.String(), xfactor, yfactor))
 
@@ -88,7 +88,7 @@ func (drawing *DrawingSeries) OnRedraw() {
 		if first {
 			first = false
 			xopen := drawArea.O.X + int(xfactor*float64(item.TimeSlice.From.Sub(drawing.xAxisRange.From)))
-			yopen := drawArea.O.Y + drawArea.Height - int(yfactor*(item.Open-lowboundary))
+			yopen := drawArea.O.Y + drawArea.Height - int(yfactor*(item.Open-yrange.Low()))
 			drawing.Ctx2D.MoveTo(float64(xopen), float64(yopen))
 			drawing.Ctx2D.BeginPath()
 			drawing.Ctx2D.LineTo(float64(xopen), float64(yopen))
@@ -96,7 +96,7 @@ func (drawing *DrawingSeries) OnRedraw() {
 		}
 
 		xclose = drawArea.O.X + int(xfactor*float64(item.TimeSlice.To.Sub(drawing.xAxisRange.From)))
-		yclose := drawArea.O.Y + drawArea.Height - int(yfactor*(item.Close-lowboundary))
+		yclose := drawArea.O.Y + drawArea.Height - int(yfactor*(item.Close-yrange.Low()))
 		drawing.Ctx2D.LineTo(float64(xclose), float64(yclose))
 
 		// scan next item

@@ -48,11 +48,11 @@ func (drawing DrawingCandles) OnRedraw() {
 	// reduce the drawing area
 	drawArea := drawing.ClipArea.Shrink(0, 5)
 	drawArea.Height -= 15
-	
+
 	// get xfactor & yfactor according to time selection
+	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
 	xfactor := float64(drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
-	yfactor := float64(drawArea.Height) / drawing.series.DataRange(drawing.xAxisRange, 10).Delta()
-	lowboundary := drawing.series.DataRange(drawing.xAxisRange, 10).Low()
+	yfactor := float64(drawArea.Height) / yrange.Delta()
 
 	Debug(DBG_REDRAW, fmt.Sprintf("%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawArea, drawing.xAxisRange.String(), xfactor, yfactor))
 
@@ -75,13 +75,14 @@ func (drawing DrawingCandles) OnRedraw() {
 	var rcandle *Rect
 	item := drawing.series.Tail
 	for item != nil {
-		// skip items out of range
+		// skip items before xAxisRange boundary or without duration
 		d := float64(item.Duration().Duration)
 		if item.To.Before(drawing.xAxisRange.From) || item.IsInfinite() || d == 0.0 {
-			// scan next item
 			item = item.Next
 			continue
 		}
+
+		// do not draw items after xAxisRange boundary
 		if item.TimeSlice.From.After(drawing.xAxisRange.To) {
 			break
 		}
@@ -95,7 +96,7 @@ func (drawing DrawingCandles) OnRedraw() {
 		}
 		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(candleColor.Hexa())})
 
-		// build the OC candle rect inside the drawing areaa
+		// build the OC candle rect, inside the drawing areaa
 		rcandle = new(Rect)
 
 		// x axis: time
@@ -112,7 +113,7 @@ func (drawing DrawingCandles) OnRedraw() {
 
 			// y axis: value
 			// need to reverse the candle in canvas coordinates
-			rcandle.O.Y = drawArea.O.Y + drawArea.Height - int(yfactor*(item.Open-lowboundary))
+			rcandle.O.Y = drawArea.O.Y + drawArea.Height - int(yfactor*(item.Open-yrange.Low()))
 			rcandle.Height = -int(yfactor * (item.Close - item.Open))
 			rcandle.FlipPositive()
 
@@ -133,7 +134,7 @@ func (drawing DrawingCandles) OnRedraw() {
 		rwick.O.X = drawing.ClipArea.O.X + int(float64(drawing.ClipArea.Width)*xtimerate) - rwick.Width/2
 
 		// need to reverse the candle in canvas coordinates
-		rwick.O.Y = drawArea.O.Y + drawArea.Height - int(yfactor*(item.Low-lowboundary))
+		rwick.O.Y = drawArea.O.Y + drawArea.Height - int(yfactor*(item.Low-yrange.Low()))
 		rwick.Height = -int(yfactor * (item.High - item.Low))
 		rwick.FlipPositive()
 
