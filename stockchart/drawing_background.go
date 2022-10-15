@@ -23,7 +23,7 @@ func (drawing *DrawingBackground) OnRedraw() {
 
 	// copyright
 	drawing.Ctx2D.SetFont(`20px 'Roboto', sans-serif`)
-	drawing.DrawTextBox("@github.com/sunraylab", Point{X: drawing.ClipArea.End().X - 50, Y: drawing.ClipArea.End().Y - 50}, AlignEnd|AlignBottom, drawing.MainColor, 0, 0, 0)
+	drawing.DrawTextBox("@github.com/sunraylab", Point{X: drawing.ClipArea.End().X - 100, Y: drawing.ClipArea.End().Y - 100}, AlignEnd|AlignBottom, drawing.MainColor, 0, 0, 0)
 
 	// no data
 	if drawing.series.IsEmpty() {
