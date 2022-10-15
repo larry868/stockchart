@@ -86,6 +86,7 @@ Go provides a specific js file called `wasm_exec.js` that need to be served by y
 - v0.7.0 alpha: major change in the way selections works, now works with request out of the chart
 	- new feat candle selection is displayed on the navbar and the chart 
 	- new feat shift timeselection grabbing the timeselector
+	- new drawing : volume bars
 - v0.6.1 alpha: upgrade with timeline v2.2.1
 - v0.6.0 alpha: handle click event to select a data, fire func on select
 - v0.5.0 alpha: fix + enhance series list

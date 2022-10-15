@@ -45,7 +45,7 @@ func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.Mouse
 	}
 
 	// get the candle
-	trate := drawing.ClipArea.XRate(xy.X)
+	trate := drawing.drawArea.XRate(xy.X)
 	postime := drawing.xAxisRange.WhatTime(trate)
 	hoverData := drawing.series.GetDataAt(postime)
 	if postime.IsZero() || hoverData == nil {
@@ -64,15 +64,15 @@ func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.Mouse
 	// draw a line at the middle of the selected candle
 	middletime := hoverData.TimeSlice.Middle()
 	xtimerate := drawing.xAxisRange.Progress(middletime)
-	xpos := drawing.ClipArea.O.X + int(float64(drawing.ClipArea.Width)*xtimerate)
+	xpos := drawing.drawArea.O.X + int(float64(drawing.drawArea.Width)*xtimerate)
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
-	drawing.Ctx2D.FillRect(float64(xpos), float64(drawing.ClipArea.O.Y), 1, float64(drawing.ClipArea.Height))
+	drawing.Ctx2D.FillRect(float64(xpos), float64(drawing.drawArea.O.Y), 1, float64(drawing.drawArea.Height))
 
 	// draw the date in the footer
 	strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(middletime, time.Time{})
 	strtime := middletime.Format(strdtefmt)
 	drawing.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
-	drawing.DrawTextBox(strtime, Point{X: xpos, Y: drawing.ClipArea.O.Y + drawing.ClipArea.Height}, AlignCenter|AlignBottom, drawing.MainColor, 5, 1, 1)
+	drawing.DrawTextBox(strtime, Point{X: xpos, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignCenter|AlignBottom, drawing.MainColor, 5, 1, 1)
 
 }
 
@@ -86,7 +86,7 @@ func (drawing *DrawingHoverCandles) OnClick(xy Point, event *htmlevent.MouseEven
 	}
 
 	// get the candle
-	trate := drawing.ClipArea.XRate(xy.X)
+	trate := drawing.drawArea.XRate(xy.X)
 	postime := drawing.xAxisRange.WhatTime(trate)
 	drawing.chart.selectedData = drawing.series.GetDataAt(postime)
 	if postime.IsZero() || drawing.chart.selectedData == nil {

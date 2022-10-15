@@ -45,16 +45,12 @@ func (drawing DrawingCandles) OnRedraw() {
 		neutralCandle = rgb.Gray
 	)
 
-	// reduce the drawing area
-	drawArea := drawing.ClipArea.Shrink(0, 5)
-	drawArea.Height -= 15
-
 	// get xfactor & yfactor according to time selection
 	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
-	xfactor := float64(drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
-	yfactor := float64(drawArea.Height) / yrange.Delta()
+	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
+	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, fmt.Sprintf("%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawArea, drawing.xAxisRange.String(), xfactor, yfactor))
+	Debug(DBG_REDRAW, fmt.Sprintf("%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor))
 
 	// draw selected data if any
 	if drawing.chart.selectedData != nil {
@@ -62,7 +58,7 @@ func (drawing DrawingCandles) OnRedraw() {
 		if drawing.xAxisRange.WhereIs(tsemiddle)&timeline.TS_IN > 0 {
 			drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
 			drawing.Ctx2D.SetLineWidth(1)
-			xseldata := drawArea.O.X + int(xfactor*float64(tsemiddle.Sub(drawing.xAxisRange.From)))
+			xseldata := drawing.drawArea.O.X + int(xfactor*float64(tsemiddle.Sub(drawing.xAxisRange.From)))
 			drawing.Ctx2D.BeginPath()
 			drawing.Ctx2D.MoveTo(float64(xseldata)+0.5, float64(drawing.ClipArea.O.Y))
 			drawing.Ctx2D.LineTo(float64(xseldata)+0.5, float64(drawing.ClipArea.O.Y+drawing.ClipArea.Height))
@@ -100,7 +96,7 @@ func (drawing DrawingCandles) OnRedraw() {
 		rcandle = new(Rect)
 
 		// x axis: time
-		rcandle.O.X = drawArea.O.X + int(math.Round(xfactor*float64(item.TimeSlice.From.Sub(drawing.xAxisRange.From))))
+		rcandle.O.X = drawing.drawArea.O.X + int(math.Round(xfactor*float64(item.TimeSlice.From.Sub(drawing.xAxisRange.From))))
 		rcandle.Width = imax(1, int(math.Round(xfactor*d)))
 
 		// add padding between candles
@@ -113,12 +109,12 @@ func (drawing DrawingCandles) OnRedraw() {
 
 			// y axis: value
 			// need to reverse the candle in canvas coordinates
-			rcandle.O.Y = drawArea.O.Y + drawArea.Height - int(yfactor*(item.Open-yrange.Low()))
+			rcandle.O.Y = drawing.drawArea.O.Y + drawing.drawArea.Height - int(yfactor*(item.Open-yrange.Low()))
 			rcandle.Height = -int(yfactor * (item.Close - item.Open))
 			rcandle.FlipPositive()
 
 			// skip candles outside the drawing area
-			if rcandle = drawArea.And(*rcandle); rcandle == nil {
+			if rcandle = drawing.drawArea.And(*rcandle); rcandle == nil {
 				item = item.Next
 				continue
 			}
@@ -131,15 +127,15 @@ func (drawing DrawingCandles) OnRedraw() {
 		rwick := new(Rect)
 		rwick.Width = imax(xpadding, 1)
 		xtimerate := drawing.xAxisRange.Progress(item.TimeSlice.Middle())
-		rwick.O.X = drawing.ClipArea.O.X + int(float64(drawing.ClipArea.Width)*xtimerate) - rwick.Width/2
+		rwick.O.X = drawing.drawArea.O.X + int(float64(drawing.drawArea.Width)*xtimerate) - rwick.Width/2
 
 		// need to reverse the candle in canvas coordinates
-		rwick.O.Y = drawArea.O.Y + drawArea.Height - int(yfactor*(item.Low-yrange.Low()))
+		rwick.O.Y = drawing.drawArea.O.Y + drawing.drawArea.Height - int(yfactor*(item.Low-yrange.Low()))
 		rwick.Height = -int(yfactor * (item.High - item.Low))
 		rwick.FlipPositive()
 
 		// draw LH only if inside the drawing area,same color
-		if rwick = drawArea.And(*rwick); rwick != nil {
+		if rwick = drawing.drawArea.And(*rwick); rwick != nil {
 			drawing.Ctx2D.FillRect(float64(rwick.O.X), float64(rwick.O.Y), float64(rwick.Width), float64(rwick.Height))
 		}
 
@@ -152,13 +148,13 @@ func (drawing DrawingCandles) OnRedraw() {
 	if last != nil && rcandle != nil {
 
 		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Lighten(0.2).Opacify(0.5).Hexa())})
-		drawing.Ctx2D.FillRect(float64(rcandle.End().X), float64(drawing.ClipArea.O.Y), 1.0, float64(drawing.ClipArea.Height))
+		drawing.Ctx2D.FillRect(float64(rcandle.End().X), float64(drawing.drawArea.O.Y), 1.0, float64(drawing.drawArea.Height))
 
 		// draw the ending date
 		strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(last.To, time.Time{})
 		strtime := last.To.Format(strdtefmt)
 		drawing.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
-		drawing.DrawTextBox(strtime, Point{X: rcandle.End().X + 1, Y: drawing.ClipArea.O.Y + drawing.ClipArea.Height}, AlignStart|AlignBottom, drawing.MainColor, 0, 0, 2)
+		drawing.DrawTextBox(strtime, Point{X: rcandle.End().X + 1, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignStart|AlignBottom, drawing.MainColor, 0, 0, 2)
 
 	}
 

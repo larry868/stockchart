@@ -15,8 +15,8 @@ import (
 type DrawingTimeSelector struct {
 	Drawing
 
-	buttonFrom     Rect // coordinates of the button within the cliparea
-	buttonTo       Rect // coordinates of the button within the cliparea
+	buttonFrom     Rect // coordinates of the button within the drawarea
+	buttonTo       Rect // coordinates of the button within the drawarea
 	isCursorResize bool // is the cursor the resize one ?
 	isCursorGrab   bool // is the cursor the hand one ?
 
@@ -73,7 +73,7 @@ func (drawing *DrawingTimeSelector) OnRedraw() {
 		return
 	}
 
-	Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw drawarea:%s, xAxisRange:%v\n", drawing.Name, drawing.ClipArea, drawing.xAxisRange.String()))
+	Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw drawarea:%s, xAxisRange:%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String()))
 
 	// take into account the selectedTimeSlice at chatr level
 	drawing.dragtimeSelection = drawing.chart.selectedTimeSlice
@@ -86,20 +86,20 @@ func (drawing *DrawingTimeSelector) OnRedraw() {
 func (drawing *DrawingTimeSelector) redraw() {
 
 	// get the y center for redrawing the buttons
-	ycenter := float64(drawing.ClipArea.O.Y) + float64(drawing.ClipArea.Height)/2.0
+	ycenter := float64(drawing.drawArea.O.Y) + float64(drawing.drawArea.Height)/2.0
 
 	// draw the left selector
 	xleftrate := drawing.xAxisRange.Progress(drawing.dragtimeSelection.From)
-	xposleft := float64(drawing.ClipArea.O.X) + float64(drawing.ClipArea.Width)*xleftrate
+	xposleft := float64(drawing.drawArea.O.X) + float64(drawing.drawArea.Width)*xleftrate
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Opacify(0.4).Hexa())})
-	drawing.Ctx2D.FillRect(float64(drawing.ClipArea.O.X), float64(drawing.ClipArea.O.Y), xposleft, float64(drawing.ClipArea.Height))
+	drawing.Ctx2D.FillRect(float64(drawing.drawArea.O.X), float64(drawing.drawArea.O.Y), xposleft, float64(drawing.drawArea.Height))
 	moveButton(drawing, &drawing.buttonFrom, xposleft, ycenter)
 
 	// draw the right selector
 	xrightrate := drawing.xAxisRange.Progress(drawing.dragtimeSelection.To)
-	xposright := float64(drawing.ClipArea.O.X) + float64(drawing.ClipArea.Width)*xrightrate
+	xposright := float64(drawing.drawArea.O.X) + float64(drawing.drawArea.Width)*xrightrate
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Opacify(0.4).Hexa())})
-	drawing.Ctx2D.FillRect(xposright, float64(drawing.ClipArea.O.Y), float64(drawing.ClipArea.Width)-xposright, float64(drawing.ClipArea.Height))
+	drawing.Ctx2D.FillRect(xposright, float64(drawing.drawArea.O.Y), float64(drawing.drawArea.Width)-xposright, float64(drawing.drawArea.Height))
 	moveButton(drawing, &drawing.buttonTo, xposright, ycenter)
 }
 
@@ -139,7 +139,7 @@ func (drawing *DrawingTimeSelector) OnMouseDown(xy Point, event *htmlevent.Mouse
 		if !drawing.isCursorGrab {
 			drawing.Ctx2D.Canvas().AttributeStyleMap().Set("cursor", &typedom.Union{Value: js.ValueOf(`grab`)})
 			drawing.isCursorGrab = true
-			xrate := drawing.ClipArea.XRate(xy.X)
+			xrate := drawing.drawArea.XRate(xy.X)
 			postime := drawing.xAxisRange.WhatTime(xrate)
 			postime = drawing.xAxisRange.Bound(postime)
 			drawing.dragShiftlasttime = postime
@@ -198,7 +198,7 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 		fRedraw := false
 		// change the boundary of the selector
 		// get and bound the position of the cursor within xAxisRange
-		xrate := drawing.ClipArea.XRate(xy.X)
+		xrate := drawing.drawArea.XRate(xy.X)
 		postime := drawing.xAxisRange.WhatTime(xrate)
 		postime = drawing.xAxisRange.Bound(postime)
 

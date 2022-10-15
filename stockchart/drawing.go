@@ -14,6 +14,7 @@ type Drawing struct {
 	Name            string    // drawing name, mainly for debugging, but culd be used in the drawing
 	BackgroundColor rgb.Color // optional, fully transparent by default
 	MainColor       rgb.Color // optional, fully transparent by default
+	drawArea        Rect      // the drawing area of this drawing, the clip area of the layer by default
 
 	*Layer           // the parent layer
 	series *DataList // the series of data to draw
@@ -21,6 +22,8 @@ type Drawing struct {
 	OnRedraw func()
 
 	// optional functions to be defined by upper drawings
+	DrawArea func(clipArea Rect) Rect
+
 	OnMouseDown  func(xy Point, event *htmlevent.MouseEvent)
 	OnMouseUp    func(xy Point, event *htmlevent.MouseEvent)
 	OnMouseMove  func(xy Point, event *htmlevent.MouseEvent)

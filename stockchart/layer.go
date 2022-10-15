@@ -30,7 +30,7 @@ type Layer struct {
 	ClipArea Rect
 	Ctx2D    *canvas.CanvasRenderingContext2D
 
-	Name      string                   // the name of the layer, for debugging purpose
+	Name    string                   // the name of the layer, for debugging purpose
 	chart   *StockChart              // the parent chart
 	canvasE canvas.HTMLCanvasElement // the <canvas> element of this layer
 	layout  layoutT                  // The layout of this layer within the chart
@@ -52,10 +52,11 @@ func NewLayer(id string, chart *StockChart, layout layoutT, xaxisrange *timeline
 // AddDrawing add a new drawing to the stack of drawings appearing on this layer.
 //
 // The bgcolor is only used by the drawing.
-func (layer *Layer) AddDrawing(d *Drawing, bgcolor rgb.Color) {
-	d.Layer = layer
-	d.BackgroundColor = bgcolor
-	layer.drawings = append(layer.drawings, d)
+func (layer *Layer) AddDrawing(dr *Drawing, bgcolor rgb.Color) *Drawing {
+	dr.Layer = layer
+	dr.BackgroundColor = bgcolor
+	layer.drawings = append(layer.drawings, dr)
+	return dr
 }
 
 // Default string interface
@@ -170,7 +171,7 @@ func (layer *Layer) SetEventDispatcher() {
 					drawing.OnWheel(event)
 				}
 			}
-			Debug(DBG_SELCHANGE, fmt.Sprintf("OnWheel dispatcher: last %s, new %s", oldselts.String(), layer.chart.selectedTimeSlice.String() ))
+			Debug(DBG_SELCHANGE, fmt.Sprintf("OnWheel dispatcher: last %s, new %s", oldselts.String(), layer.chart.selectedTimeSlice.String()))
 			processSelChange()
 		})
 	}
@@ -222,7 +223,15 @@ func (layer *Layer) Resize(newarea Rect) {
 	layer.ClipArea.Width = dbuffwidth
 	layer.ClipArea.Height = dbuffheight
 
-	
+	// recalulate Drawing area
+	for _, drawing := range layer.drawings {
+		if drawing.DrawArea != nil {
+			drawing.drawArea = drawing.DrawArea(layer.ClipArea)
+		} else {
+			drawing.drawArea = layer.ClipArea
+		}
+	}
+
 	Debug(DBG_RESIZE, fmt.Sprintf("%q layer, Resize dpr=%f drawbuffw=%v, drawbuffh=%v", layer.Name, dpr, dbuffwidth, dbuffheight))
 
 	// TODO: do not redraw if the size has not changed
@@ -251,7 +260,7 @@ func (layer *Layer) RedrawOnlyNeeds() {
 		if drawing.NeedRedraw != nil {
 			need := drawing.NeedRedraw()
 
-			Debug(DBG_SELCHANGE | DBG_REDRAW, fmt.Sprintf("%q/%q layer/drawing, RedrawOnlyNeeds NeedRedraw:%v", layer.Name, drawing.Name, need))
+			Debug(DBG_SELCHANGE|DBG_REDRAW, fmt.Sprintf("%q/%q layer/drawing, RedrawOnlyNeeds NeedRedraw:%v", layer.Name, drawing.Name, need))
 
 			if need {
 				layer.Redraw()

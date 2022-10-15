@@ -154,12 +154,39 @@ func (dl DataList) DataRange(ts *timeline.TimeSlice, maxSteps uint) (dr datarang
 	var low, high float64
 	item := dl.Tail
 	for item != nil {
-		if ts == nil || ((item.TimeSlice.From.Equal(ts.From) || item.TimeSlice.From.After(ts.From)) && (item.TimeSlice.To.Equal(ts.To) || item.TimeSlice.To.Before(ts.To))) {
+		// if ts == nil || ((item.TimeSlice.From.Equal(ts.From) || item.TimeSlice.From.After(ts.From)) && (item.TimeSlice.To.Equal(ts.To) || item.TimeSlice.To.Before(ts.To))) {
+		if ts == nil || (ts.WhereIs(item.From)|ts.WhereIs(item.To)&timeline.TS_IN > 0) {
 			if low == 0 || item.Low < low {
 				low = item.Low
 			}
 			if item.High > high {
 				high = item.High
+			}
+		}
+		item = item.Next
+	}
+
+	dr = datarange.Make(low, high, -float64(maxSteps), dl.Name)
+	return dr
+}
+
+// VolumeDataRange returns the data boundaries of the DataList, scanning all datapoint between the timeslice boundaries
+//
+//	ts == nil scan all data points between the Head and the Tail:
+//	if maxSteps == 0 the returned datarange doesn t have any stepzise.
+//	if maxSteps > 0 the returned datarange gets a stepzise and boudaries are rounded.
+//
+// returns an empty datarange if the list is empty or if missing head or tail.
+func (dl DataList) VolumeDataRange(ts *timeline.TimeSlice, maxSteps uint) (dr datarange.DataRange) {
+	var low, high float64
+	item := dl.Tail
+	for item != nil {
+		if ts == nil || (ts.WhereIs(item.From)|ts.WhereIs(item.To)&timeline.TS_IN > 0) {
+			if low == 0 || item.Volume < low {
+				low = item.Volume
+			}
+			if item.Volume > high {
+				high = item.Volume
 			}
 		}
 		item = item.Next

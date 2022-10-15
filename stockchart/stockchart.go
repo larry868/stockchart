@@ -111,7 +111,13 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList) (*StockCh
 
 	// the navbar layer, updated only when navXAxisRange change
 	if layer := chart.addNewLayer("1-navbar", lAREA_NAVBAR, rgb.White, &chart.timeRange); layer != nil {
-		layer.AddDrawing(&NewDrawingSeries(&chart.MainSeries, true).Drawing, rgb.White)
+		dr := layer.AddDrawing(&NewDrawingSeries(&chart.MainSeries, true).Drawing, rgb.White)
+		dr.DrawArea = func(cliparea Rect) Rect {
+			area := cliparea
+			area.O.Y += 5
+			area.Height -= 5
+			return area
+		}
 		layer.AddDrawing(&NewDrawingXGrid(&chart.MainSeries, true, false).Drawing, rgb.None)
 		chart.layers[1] = layer
 	}
@@ -132,9 +138,28 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList) (*StockCh
 	// the chart layer
 	if layer := chart.addNewLayer("4-chart", lAREA_GRAPH, rgb.White, &chart.selectedTimeSlice); layer != nil {
 		layer.AddDrawing(&NewDrawingBackground(&chart.MainSeries).Drawing, rgb.None)
-		layer.AddDrawing(&NewDrawingYGrid(&chart.MainSeries, false).Drawing, rgb.None)
+		dr := layer.AddDrawing(&NewDrawingYGrid(&chart.MainSeries, false).Drawing, rgb.None)
+		dr.DrawArea = func(cliparea Rect) Rect {
+			area := cliparea.Shrink(0, 5)
+			area.Height -= 15
+			return area
+		}
+
 		layer.AddDrawing(&NewDrawingXGrid(&chart.MainSeries, false, true).Drawing, rgb.None)
-		layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries).Drawing, rgb.White)
+		dr = layer.AddDrawing(&NewDrawingBars(&chart.MainSeries).Drawing, rgb.None)
+		dr.DrawArea = func(cliparea Rect) Rect {
+			area := cliparea.Shrink(0, 5)
+			h := int(float64(area.Height) * 0.15) // draw bars at the bottom of the cliparea
+			area.O.Y = area.O.Y + area.Height - h - 15
+			area.Height = h
+			return area
+		}
+		dr = layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries).Drawing, rgb.White)
+		dr.DrawArea = func(cliparea Rect) Rect {
+			area := cliparea.Shrink(0, 5)
+			area.Height -= 15
+			return area
+		}
 		chart.layers[4] = layer
 	}
 

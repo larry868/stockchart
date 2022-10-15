@@ -38,40 +38,36 @@ func (drawing *DrawingYGrid) OnRedraw() {
 		return
 	}
 
-	
-	// reduce the cliping area
-	clipArea := drawing.ClipArea.Shrink(0, 5)
-	clipArea.Height -= 15
 	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
-	
-	Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v\n", drawing.Name, drawing.ClipArea, drawing.xAxisRange.String(), yrange))
+
+	Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange))
 
 	// setup default text drawing properties
 	drawing.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
 	drawing.Ctx2D.SetTextBaseline(canvas.MiddleCanvasTextBaseline)
 	drawing.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
-	
+
 	// draw the Y Scale
 	for val := yrange.High(); val >= yrange.Low() && yrange.StepSize() > 0; val -= yrange.StepSize() {
 
 		// calculate ypos
 		yrate := yrange.Progress(val)
-		ypos := float64(clipArea.End().Y) - yrate*float64(clipArea.Height)
-		ypos = float64(clipArea.BoundY(int(ypos)))
+		ypos := float64(drawing.drawArea.End().Y) - yrate*float64(drawing.drawArea.Height)
+		ypos = float64(drawing.drawArea.BoundY(int(ypos)))
 
 		// draw the grid line
 		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
 		linew := 10.0
 		if !drawing.fScale {
-			linew = float64(clipArea.Width)
+			linew = float64(drawing.drawArea.Width)
 		}
-		drawing.Ctx2D.FillRect(float64(clipArea.O.X), ypos, linew, 1)
+		drawing.Ctx2D.FillRect(float64(drawing.drawArea.O.X), ypos, linew, 1)
 
 		// draw yscale label
 		if drawing.fScale {
 			strvalue := datarange.FormatData(val, yrange.StepSize()) // fmt.Sprintf("%.1f", val)
 			drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(rgb.Gray.Darken(0.5).Hexa())})
-			drawing.Ctx2D.FillText(strvalue, float64(clipArea.O.Y+7), ypos+1, nil)
+			drawing.Ctx2D.FillText(strvalue, float64(drawing.drawArea.O.Y+7), ypos+1, nil)
 		}
 	}
 
