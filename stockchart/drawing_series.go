@@ -46,7 +46,7 @@ func (drawing *DrawingSeries) OnRedraw() {
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, "%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
+	Debug(DBG_REDRAW, "%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
 
 	// setup drawing tools
 	drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
@@ -107,15 +107,7 @@ func (drawing *DrawingSeries) OnRedraw() {
 	// draw selected data if any
 	if drawing.chart.selectedData != nil {
 		tsemiddle := drawing.chart.selectedData.Middle()
-		if drawing.xAxisRange.WhereIs(tsemiddle)&timeline.TS_IN > 0 {
-			drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
-			drawing.Ctx2D.SetLineWidth(1)
-			xseldata := drawing.drawArea.O.X + int(xfactor*float64(tsemiddle.Sub(drawing.xAxisRange.From)))
-			drawing.Ctx2D.BeginPath()
-			drawing.Ctx2D.MoveTo(float64(xseldata)+0.5, float64(drawing.ClipArea.O.Y))
-			drawing.Ctx2D.LineTo(float64(xseldata)+0.5, float64(drawing.ClipArea.O.Y+drawing.ClipArea.Height))
-			drawing.Ctx2D.Stroke()
-		}
+		drawing.DrawVLine(tsemiddle, drawing.MainColor, true)
 	}
 
 	// memorize last sel data

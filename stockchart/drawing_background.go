@@ -23,11 +23,11 @@ func (drawing *DrawingBackground) OnRedraw() {
 
 	// copyright
 	drawing.Ctx2D.SetFont(`20px 'Roboto', sans-serif`)
-	drawing.DrawTextBox("@github.com/sunraylab", Point{X: drawing.ClipArea.End().X - 100, Y: drawing.ClipArea.End().Y - 100}, AlignEnd|AlignBottom, drawing.MainColor, 0, 0, 0)
+	drawing.DrawTextBox("@github.com/sunraylab", Point{X: drawing.ClipArea.End().X - 100, Y: drawing.ClipArea.End().Y - 100}, AlignEnd|AlignBottom, rgb.None, drawing.MainColor, 0, 0, 0)
 
 	// no data
 	if drawing.series.IsEmpty() {
 		drawing.Ctx2D.SetFont(`bold 30px 'Roboto', sans-serif`)
-		drawing.DrawTextBox("no data", Point{X: drawing.ClipArea.Middle().X, Y: drawing.ClipArea.Middle().Y}, AlignCenter, drawing.MainColor, 0, 0, 0)
+		drawing.DrawTextBox("no data", Point{X: drawing.ClipArea.Middle().X, Y: drawing.ClipArea.Middle().Y}, AlignCenter, rgb.White, drawing.MainColor, 0, 0, 0)
 	}
 }

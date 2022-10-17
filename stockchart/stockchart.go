@@ -54,14 +54,28 @@ func (chart StockChart) String() string {
 }
 
 // SetMainSeries set or reset the MainSeries of the chart and its drawings. Reset the timerange
-func (pchart *StockChart) SetMainSeries(series DataList, extendrate float64) {
+func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64) {
+	
+	// clear subchart series
+	for _, player := range pchart.layers {
+		if player != nil {
+			for _, pdraw := range player.drawings {
+				if pdraw != nil {
+					if pdraw.series != &pchart.MainSeries {
+						pdraw.series = nil
+					}
+				}
+			}
+		}
+	}
+	
 	// change the content
 	pchart.MainSeries = series
 
 	// reset time range
 	pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), extendrate)
 
-	// Redraw
+	// Redraw, without subcharts
 	pchart.Redraw()
 }
 
@@ -73,7 +87,6 @@ func (pchart *StockChart) AddSubChart(layerid int, dr *Drawing) {
 
 	pchart.layers[layerid].AddDrawing(dr, rgb.None, false)
 	dr.DrawArea = getMainDrawArea
-	pchart.layers[layerid].Redraw()
 }
 
 // SetTimeRange defines the overall time range to display. Extend the end with extendCoef.
@@ -179,7 +192,7 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList, extendrat
 		}
 
 		// The candles
-		dr = layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries).Drawing, rgb.White, true)
+		dr = layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries, 0.9).Drawing, rgb.White, true)
 		dr.DrawArea = getMainDrawArea
 
 		chart.layers[4] = layer
@@ -199,7 +212,7 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList, extendrat
 	})
 
 	// size it the first time to force a full redraw
-	chart.Resize()
+//	chart.Resize()
 
 	return chart, nil
 }

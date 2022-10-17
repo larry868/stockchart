@@ -41,7 +41,11 @@ func (drawing DrawingXGrid) OnRedraw() {
 	maxscans := float64(drawing.drawArea.Width) / minxstepwidth
 	maskmain := drawing.xAxisRange.GetScanMask(uint(maxscans))
 
-	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, maskmain=%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), maskmain)
+	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, maskmain=%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), maskmain)
+
+	if maskmain == timeline.MASK_NONE {
+		return
+	}
 
 	// setup default text drawing properties
 	drawing.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
@@ -104,4 +108,14 @@ func (drawing DrawingXGrid) OnRedraw() {
 		// scan next
 		lastxtime = xtime
 	}
+
+	// draw an ending line at the end of the time range
+	xpos := drawing.DrawVLine(drawing.series.Head.To, drawing.MainColor.Opacify(0.5), true)
+
+	// draw the ending date
+	strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(drawing.series.Head.To, time.Time{})
+	strtime := drawing.series.Head.To.Format(strdtefmt)
+	drawing.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
+	drawing.DrawTextBox(strtime, Point{X: xpos + 1, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignStart|AlignBottom, rgb.White, drawing.MainColor, 0, 0, 2)
+
 }

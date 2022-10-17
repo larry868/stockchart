@@ -2,25 +2,27 @@ package stockchart
 
 import (
 	"math"
-	"time"
 
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/rgb/v2"
-	"github.com/sunraylab/timeline/v2"
 )
 
 // Drawing a series of Candles
 type DrawingCandles struct {
 	Drawing
+	alphaFactor float32
 }
 
 // Drawing factory
-func NewDrawingCandles(series *DataList) *DrawingCandles {
+// initAlpha must be within 0 (0% opacity = full transparent) and 1 (100% opacity)
+func NewDrawingCandles(series *DataList, initAlpha float32) *DrawingCandles {
 	drawing := new(DrawingCandles)
 	drawing.Name = "candles"
 	drawing.series = series
 	drawing.MainColor = rgb.Black.Lighten(0.5)
+	drawing.alphaFactor = initAlpha
+
 	drawing.Drawing.OnRedraw = func() {
 		drawing.OnRedraw()
 	}
@@ -49,24 +51,16 @@ func (drawing DrawingCandles) OnRedraw() {
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, "%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
+	Debug(DBG_REDRAW, "%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
 
 	// draw selected data if any
 	if drawing.chart.selectedData != nil {
 		tsemiddle := drawing.chart.selectedData.Middle()
-		if drawing.xAxisRange.WhereIs(tsemiddle)&timeline.TS_IN > 0 {
-			drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
-			drawing.Ctx2D.SetLineWidth(1)
-			xseldata := drawing.drawArea.O.X + int(xfactor*float64(tsemiddle.Sub(drawing.xAxisRange.From)))
-			drawing.Ctx2D.BeginPath()
-			drawing.Ctx2D.MoveTo(float64(xseldata)+0.5, float64(drawing.ClipArea.O.Y))
-			drawing.Ctx2D.LineTo(float64(xseldata)+0.5, float64(drawing.ClipArea.O.Y+drawing.ClipArea.Height))
-			drawing.Ctx2D.Stroke()
-		}
+		drawing.DrawVLine(tsemiddle, drawing.MainColor, true)
 	}
 
 	// scan all points
-	var last *DataStock
+	//var last *DataStock
 	var rcandle *Rect
 	item := drawing.series.Tail
 	for item != nil {
@@ -89,7 +83,7 @@ func (drawing DrawingCandles) OnRedraw() {
 		} else if item.Close < item.Open {
 			candleColor = redCandle
 		}
-		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(candleColor.Hexa())})
+		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(candleColor.Opacify(drawing.alphaFactor).Hexa())})
 
 		// build the OC candle rect, inside the drawing areaa
 		rcandle = new(Rect)
@@ -99,7 +93,9 @@ func (drawing DrawingCandles) OnRedraw() {
 		rcandle.Width = imax(1, int(math.Round(xfactor*d)))
 
 		// add padding between candles
-		xpadding := int(float64(rcandle.Width) * 0.1)
+		// xpadding := int(float64(rcandle.Width) * 0.1)
+		xpadding := imax(1, int(math.Round(xfactor*float64(drawing.chart.MainSeries.Precision)*0.1)))
+		Debug(DBG_REDRAW, "%q padding:%v, precision:%v", drawing.Name, xpadding, drawing.chart.MainSeries.Precision)
 		rcandle.O.X += xpadding
 		rcandle.Width -= 2 * xpadding
 
@@ -139,26 +135,12 @@ func (drawing DrawingCandles) OnRedraw() {
 		}
 
 		// scan next item
-		last = item
+		//last = item
 		item = item.Next
 	}
 
-	// draw an ending line at the end of the series
-	if last != nil && rcandle != nil {
-
-		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Lighten(0.2).Opacify(0.5).Hexa())})
-		drawing.Ctx2D.FillRect(float64(rcandle.End().X), float64(drawing.drawArea.O.Y), 1.0, float64(drawing.drawArea.Height))
-
-		// draw the ending date
-		strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(last.To, time.Time{})
-		strtime := last.To.Format(strdtefmt)
-		drawing.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
-		drawing.DrawTextBox(strtime, Point{X: rcandle.End().X + 1, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignStart|AlignBottom, drawing.MainColor, 0, 0, 2)
-
-	}
-
 	// draw the label of the series
+	// TODO: overwritting when multiple drawings on the same chart
 	drawing.Ctx2D.SetFont(`14px 'Roboto', sans-serif`)
-	drawing.DrawTextBox(drawing.series.Name, Point{X: 0, Y: 0}, AlignStart|AlignTop, drawing.MainColor, 3, 0, 2)
-
+	drawing.DrawTextBox(drawing.series.Name, Point{X: 0, Y: 0}, AlignStart|AlignTop, rgb.White, drawing.MainColor, 3, 0, 2)
 }

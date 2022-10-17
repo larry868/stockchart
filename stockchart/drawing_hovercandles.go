@@ -71,7 +71,7 @@ func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.Mouse
 	strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(middletime, time.Time{})
 	strtime := middletime.Format(strdtefmt)
 	drawing.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
-	drawing.DrawTextBox(strtime, Point{X: xpos, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignCenter|AlignBottom, drawing.MainColor, 5, 1, 1)
+	drawing.DrawTextBox(strtime, Point{X: xpos, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignCenter|AlignBottom, rgb.White, drawing.MainColor, 5, 1, 1)
 
 }
 

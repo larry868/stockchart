@@ -24,8 +24,8 @@ func main() {
 
 	// build  random dataset for the demo
 	datastart := time.Date(2022, 7, 1, 0, 0, 0, 0, time.UTC)
-	dataset := BuildRandomDataset(300, datastart, time.Minute)
-	subdataset := BuildRandomDataset(5, datastart, time.Minute*30)
+	dataset := BuildRandomDataset("BTX/USD x1m", 300, datastart, time.Minute)
+	subdataset := BuildRandomDataset("BTX/USD x30m", 5, datastart, time.Minute*30)
 
 	// Create a new chart
 	chart, err := stockchart.NewStockChart("mychart", rgb.Gray.Lighten(0.8), *dataset, 0.1)
@@ -34,8 +34,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	chart.AddSubChart(4, &stockchart.NewDrawingCandles(subdataset).Drawing)
+	chart.AddSubChart(4, &stockchart.NewDrawingCandles(subdataset, 0.2).Drawing)
 
+	// size it the first time to force a full redraw
+	chart.Resize()
 
 	// handle the button "select a candle"
 	fsel := false

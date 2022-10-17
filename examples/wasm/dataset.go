@@ -8,11 +8,11 @@ import (
 	"github.com/sunraylab/timeline/v2"
 )
 
-func BuildRandomDataset(nbdata int, from time.Time, candleDuration time.Duration) *stockchart.DataList {
+func BuildRandomDataset(name string, nbdata int, from time.Time, candleDuration time.Duration) *stockchart.DataList {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
-	dataset := &stockchart.DataList{Name: "BTC/EUR"}
+	dataset := &stockchart.DataList{Name: name, Precision:candleDuration }
 	last := from
 	open := 20000.0
 
