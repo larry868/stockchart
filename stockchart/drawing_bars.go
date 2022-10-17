@@ -41,7 +41,7 @@ func (drawing DrawingBars) OnRedraw() {
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, "%q draw area:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
+	Debug(DBG_REDRAW, "%q draw area:%s, xAxisRange:%v, xfactor:%f yfactor:%f", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
 
 	// scan all points
 	var rbar *Rect

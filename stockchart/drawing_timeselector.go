@@ -72,7 +72,7 @@ func (drawing *DrawingTimeSelector) OnRedraw() {
 		return
 	}
 
-	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String())
+	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String())
 
 	// take into account the selectedTimeSlice at chatr level
 	drawing.dragtimeSelection = drawing.chart.selectedTimeSlice

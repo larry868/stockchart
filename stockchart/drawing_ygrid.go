@@ -38,7 +38,7 @@ func (drawing *DrawingYGrid) OnRedraw() {
 
 	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
 
-	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange)
+	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange)
 
 	// setup default text drawing properties
 	drawing.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
