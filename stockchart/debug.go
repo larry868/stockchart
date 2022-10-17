@@ -20,5 +20,6 @@ var DEBUG = DBG_SELCHANGE
 func Debug(debug DebugOutput, format string, data ...any) {
 	if DEBUG&debug > 0 {
 		fmt.Printf(format, data...)
+		fmt.Println()
 	}
 }
