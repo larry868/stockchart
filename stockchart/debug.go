@@ -14,11 +14,11 @@ const (
 )
 
 // Change this global variable to activate debug mode
-var DEBUG = DBG_OFF
+var DEBUG = DBG_SELCHANGE
 
 // if debug match with the DEBUG global flag, then Debug print out strprint
-func Debug(debug DebugOutput, strprint string) {
+func Debug(debug DebugOutput, format string, data ...any) {
 	if DEBUG&debug > 0 {
-		fmt.Println(strprint)
+		fmt.Printf(format, data...)
 	}
 }
