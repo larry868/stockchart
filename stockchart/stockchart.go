@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/sunraylab/rgb/v2"
 	"github.com/sunraylab/timeline/v2"
@@ -89,13 +88,11 @@ func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendrate 
 	Debug(DBG_SELCHANGE, "SetTimeRange %s", timerange)
 
 	if timerange.Duration().IsFinite && extendrate > 0 {
-		timerange.ExtendTo(timerange.Duration().Duration * time.Duration(extendrate))
+		timerange.ExtendTo(timeline.Nanoseconds(float64(timerange.Duration().Duration) * extendrate).Duration)
 	}
 
 	pchart.timeRange.From = timerange.From
 	pchart.timeRange.To = timerange.To
-
-	Debug(DBG_SELCHANGE, "SetTimeRange %s", pchart.timeRange)
 
 	selNeedUpdate := pchart.selectedTimeSlice.IsZero() || pchart.selectedTimeSlice.From.Before(pchart.timeRange.From) || pchart.selectedTimeSlice.To.After(pchart.timeRange.To)
 	if selNeedUpdate {
