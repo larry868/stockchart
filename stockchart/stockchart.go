@@ -11,6 +11,7 @@ import (
 
 	"github.com/sunraylab/rgb/v2"
 	"github.com/sunraylab/timeline/v2"
+	"github.com/sunraylab/verbose"
 
 	"github.com/gowebapi/webapi"
 	"github.com/gowebapi/webapi/core/js"
@@ -53,6 +54,29 @@ func (chart StockChart) String() string {
 	return str
 }
 
+// SetMainSeries set or reset the MainSeries of the chart and its drawings. Reset the timerange
+func (pchart *StockChart) SetMainSeries(series DataList, extendrate float64) {
+	// change the content
+	pchart.MainSeries = series
+
+	// reset time range
+	pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), extendrate)
+
+	// Redraw
+	pchart.Redraw()
+}
+
+// AddSubChart add another drawing to draw within the same X and Y ranges than the main series on the choosen layer.
+// Drawing is made just before drawing of the main drawin on the layer.
+// This drawing is associated to it's own series of data
+func (pchart *StockChart) AddSubChart(layerid int, dr *Drawing) {
+	verbose.Assert(layerid >= 0 && layerid <= 5, "wrong layer id")
+
+	pchart.layers[layerid].AddDrawing(dr, rgb.None, false)
+	dr.DrawArea = getMainDrawArea
+	pchart.layers[layerid].Redraw()
+}
+
 // SetTimeRange defines the overall time range to display. Extend the end with extendCoef.
 //
 //	extendCoef == 0 no extension
@@ -60,22 +84,22 @@ func (chart StockChart) String() string {
 //
 // Update timeselection if required. If the timeselection change the RedrawOnlyNeeds
 // Returns the setup timerange
-func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendCoef float64) timeline.TimeSlice {
+func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendrate float64) timeline.TimeSlice {
 
-	Debug(DBG_SELCHANGE, fmt.Sprintf("SetTimeRange %s", timerange))
+	Debug(DBG_SELCHANGE, "SetTimeRange %s", timerange)
 
-	if timerange.Duration().IsFinite && extendCoef > 0 {
-		timerange.ExtendTo(timerange.Duration().Duration * time.Duration(extendCoef))
+	if timerange.Duration().IsFinite && extendrate > 0 {
+		timerange.ExtendTo(timerange.Duration().Duration * time.Duration(extendrate))
 	}
-
-	//fstuck := pchart.timeRange.To.Equal(pchart.selectedTimeSlice.To)
 
 	pchart.timeRange.From = timerange.From
 	pchart.timeRange.To = timerange.To
 
+	Debug(DBG_SELCHANGE, "SetTimeRange %s", pchart.timeRange)
+
 	selNeedUpdate := pchart.selectedTimeSlice.IsZero() || pchart.selectedTimeSlice.From.Before(pchart.timeRange.From) || pchart.selectedTimeSlice.To.After(pchart.timeRange.To)
 	if selNeedUpdate {
-		pchart.DoSelChangeTimeSlice("TODO", pchart.timeRange, false)
+		pchart.DoSelChangeTimeSlice(pchart.MainSeries.Name, pchart.timeRange, false)
 	}
 	return pchart.timeRange
 }
@@ -84,7 +108,7 @@ func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendCoef 
 // An HTML page can have multiple <stockchart> but with different chartid. The layout of the chart is composed of multiples layers which are stacked canvas.
 //
 // Returns the stockchart created or an error if canvasid is not found.
-func NewStockChart(chartid string, bgcolor rgb.Color, series DataList) (*StockChart, error) {
+func NewStockChart(chartid string, bgcolor rgb.Color, series DataList, extendrate float64) (*StockChart, error) {
 	// some cleaning
 	chartid = strings.ToLower(strings.Trim(chartid, " "))
 
@@ -101,7 +125,7 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList) (*StockCh
 		MainSeries: series}
 
 	// by default the timeMaxRange is the full timeslice + 10% to represents the future.
-	chart.SetTimeRange(chart.MainSeries.TimeSlice(), 0.1)
+	chart.SetTimeRange(chart.MainSeries.TimeSlice(), extendrate)
 
 	// create master layer layout, white bg and without drawings
 	// the master layer covers all the <stockchart> element size, and is build first at the background
@@ -111,42 +135,44 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList) (*StockCh
 
 	// the navbar layer, updated only when navXAxisRange change
 	if layer := chart.addNewLayer("1-navbar", lAREA_NAVBAR, rgb.White, &chart.timeRange); layer != nil {
-		dr := layer.AddDrawing(&NewDrawingSeries(&chart.MainSeries, true).Drawing, rgb.White)
+		dr := layer.AddDrawing(&NewDrawingSeries(&chart.MainSeries, true).Drawing, rgb.White, true)
 		dr.DrawArea = func(cliparea Rect) Rect {
 			area := cliparea
 			area.O.Y += 5
 			area.Height -= 5
 			return area
 		}
-		layer.AddDrawing(&NewDrawingXGrid(&chart.MainSeries, true, false).Drawing, rgb.None)
+		layer.AddDrawing(&NewDrawingXGrid(&chart.MainSeries, true, false).Drawing, rgb.None, true)
 		chart.layers[1] = layer
 	}
 
 	// the transparent time selector layer
 	if layer := chart.addNewLayer("2-timeselector", lAREA_NAVBAR, rgb.None, &chart.timeRange); layer != nil {
-		layer.AddDrawing(&NewDrawingTimeSelector(&chart.MainSeries).Drawing, rgb.None)
+		layer.AddDrawing(&NewDrawingTimeSelector(&chart.MainSeries).Drawing, rgb.None, true)
 		layer.SetEventDispatcher()
 		chart.layers[2] = layer
 	}
 
 	// the yscale layer
 	if layer := chart.addNewLayer("3-yscale", lAREA_YSCALE, rgb.White, &chart.selectedTimeSlice); layer != nil {
-		layer.AddDrawing(&NewDrawingYGrid(&chart.MainSeries, true).Drawing, rgb.White)
+		layer.AddDrawing(&NewDrawingYGrid(&chart.MainSeries, true).Drawing, rgb.White, true)
 		chart.layers[3] = layer
 	}
 
 	// the chart layer
 	if layer := chart.addNewLayer("4-chart", lAREA_GRAPH, rgb.White, &chart.selectedTimeSlice); layer != nil {
-		layer.AddDrawing(&NewDrawingBackground(&chart.MainSeries).Drawing, rgb.None)
-		dr := layer.AddDrawing(&NewDrawingYGrid(&chart.MainSeries, false).Drawing, rgb.None)
-		dr.DrawArea = func(cliparea Rect) Rect {
-			area := cliparea.Shrink(0, 5)
-			area.Height -= 15
-			return area
-		}
+		// the background
+		layer.AddDrawing(&NewDrawingBackground(&chart.MainSeries).Drawing, rgb.None, true)
 
-		layer.AddDrawing(&NewDrawingXGrid(&chart.MainSeries, false, true).Drawing, rgb.None)
-		dr = layer.AddDrawing(&NewDrawingBars(&chart.MainSeries).Drawing, rgb.None)
+		// the YGrid
+		dr := layer.AddDrawing(&NewDrawingYGrid(&chart.MainSeries, false).Drawing, rgb.None, true)
+		dr.DrawArea = getMainDrawArea
+
+		// The XGrid
+		layer.AddDrawing(&NewDrawingXGrid(&chart.MainSeries, false, true).Drawing, rgb.None, true)
+
+		// The volume bars
+		dr = layer.AddDrawing(&NewDrawingBars(&chart.MainSeries).Drawing, rgb.None, true)
 		dr.DrawArea = func(cliparea Rect) Rect {
 			area := cliparea.Shrink(0, 5)
 			h := int(float64(area.Height) * 0.15) // draw bars at the bottom of the cliparea
@@ -154,18 +180,17 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList) (*StockCh
 			area.Height = h
 			return area
 		}
-		dr = layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries).Drawing, rgb.White)
-		dr.DrawArea = func(cliparea Rect) Rect {
-			area := cliparea.Shrink(0, 5)
-			area.Height -= 15
-			return area
-		}
+
+		// The candles
+		dr = layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries).Drawing, rgb.White, true)
+		dr.DrawArea = getMainDrawArea
+
 		chart.layers[4] = layer
 	}
 
 	// the hover transprent layer
 	if layer := chart.addNewLayer("5-hover", lAREA_GRAPH, rgb.None, &chart.selectedTimeSlice); layer != nil {
-		layer.AddDrawing(&NewDrawingHoverCandles(&chart.MainSeries).Drawing, rgb.White)
+		layer.AddDrawing(&NewDrawingHoverCandles(&chart.MainSeries).Drawing, rgb.White, true)
 		layer.SetEventDispatcher()
 		chart.layers[5] = layer
 	}
@@ -180,6 +205,12 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList) (*StockCh
 	chart.Resize()
 
 	return chart, nil
+}
+
+func getMainDrawArea(cliparea Rect) Rect {
+	area := cliparea.Shrink(0, 5)
+	area.Height -= 15
+	return area
 }
 
 // addNewLayer creates a new canvas, inside the masterE div and add it to the stack of layers within the pchart.
@@ -323,7 +354,7 @@ func (pchart *StockChart) DoSelChangeTimeSlice(strpair string, newts timeline.Ti
 	}
 	pchart.selectedTimeSlice = newts
 
-	Debug(DBG_SELCHANGE, fmt.Sprintf("DoSelChangeTimeSlice: %s", newts.String()))
+	Debug(DBG_SELCHANGE, "DoSelChangeTimeSlice: %s", newts.String())
 
 	pchart.RedrawOnlyNeeds()
 
@@ -335,7 +366,7 @@ func (pchart *StockChart) DoSelChangeTimeSlice(strpair string, newts timeline.Ti
 func (pchart *StockChart) DoSelChangeData(strpair string, newdata *DataStock, fNotify bool) {
 	pchart.selectedData = newdata
 
-	Debug(DBG_SELCHANGE, fmt.Sprintf("DoSelChangeData: %p %s", newdata, newdata.String()))
+	Debug(DBG_SELCHANGE, "DoSelChangeData: %p %s", newdata, newdata.String())
 
 	pchart.RedrawOnlyNeeds()
 

@@ -1,7 +1,6 @@
 package stockchart
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gowebapi/webapi/core/js"
@@ -40,7 +39,7 @@ func NewDrawingHoverCandles(series *DataList) *DrawingHoverCandles {
 // draw the line over the candle where the mouse is
 func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.MouseEvent) {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseMove fails, missing data", drawing.Name))
+		Debug(DBG_EVENT, "%q OnMouseMove fails, missing data", drawing.Name)
 		return
 	}
 
@@ -81,7 +80,7 @@ func (drawing *DrawingHoverCandles) OnClick(xy Point, event *htmlevent.MouseEven
 
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		drawing.chart.selectedData = nil
-		Debug(DBG_EVENT, fmt.Sprintf("%q OnClick fails, missing data", drawing.Name))
+		Debug(DBG_EVENT, "%q OnClick fails, missing data", drawing.Name)
 		return
 	}
 
@@ -90,8 +89,8 @@ func (drawing *DrawingHoverCandles) OnClick(xy Point, event *htmlevent.MouseEven
 	postime := drawing.xAxisRange.WhatTime(trate)
 	drawing.chart.selectedData = drawing.series.GetDataAt(postime)
 	if postime.IsZero() || drawing.chart.selectedData == nil {
-		Debug(DBG_EVENT, fmt.Sprintf("%q OnClick xy:%v ==> no data found at this position", drawing.Name, xy))
+		Debug(DBG_EVENT, "%q OnClick xy:%v ==> no data found at this position", drawing.Name, xy)
 	} else {
-		Debug(DBG_EVENT, fmt.Sprintf("%q OnClick xy:%v ==> %s", drawing.Name, xy, drawing.chart.selectedData.String()))
+		Debug(DBG_EVENT, "%q OnClick xy:%v ==> %s", drawing.Name, xy, drawing.chart.selectedData.String())
 	}
 }

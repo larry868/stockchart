@@ -50,12 +50,19 @@ func NewLayer(id string, chart *StockChart, layout layoutT, xaxisrange *timeline
 }
 
 // AddDrawing add a new drawing to the stack of drawings appearing on this layer.
-//
 // The bgcolor is only used by the drawing.
-func (layer *Layer) AddDrawing(dr *Drawing, bgcolor rgb.Color) *Drawing {
+//
+//	if ontop is false, the drawing is added just after the drawing on top of the stack
+func (layer *Layer) AddDrawing(dr *Drawing, bgcolor rgb.Color, ontop bool) *Drawing {
 	dr.Layer = layer
 	dr.BackgroundColor = bgcolor
-	layer.drawings = append(layer.drawings, dr)
+	if ontop || len(layer.drawings) == 0 {
+		layer.drawings = append(layer.drawings, dr)
+	} else {
+		insertindex := len(layer.drawings) - 1
+		layer.drawings = append(layer.drawings[:insertindex+1], layer.drawings[insertindex:]...)
+		layer.drawings[insertindex] = dr
+	}
 	return dr
 }
 
@@ -88,7 +95,7 @@ func (layer *Layer) SetEventDispatcher() {
 	// only if the layer contains at least one mouse function on its drawings
 	hme := layer.HandledEvents()
 
-	Debug(DBG_EVENT, fmt.Sprintf("%q layer, SetEventDispatcher event handled=%08b ", layer.Name, hme))
+	Debug(DBG_EVENT, "%q layer, SetEventDispatcher event handled=%08b ", layer.Name, hme)
 
 	if (hme & evt_MouseDown) != 0 {
 		layer.canvasE.SetOnMouseDown(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
@@ -171,7 +178,7 @@ func (layer *Layer) SetEventDispatcher() {
 					drawing.OnWheel(event)
 				}
 			}
-			Debug(DBG_SELCHANGE, fmt.Sprintf("OnWheel dispatcher: last %s, new %s", oldselts.String(), layer.chart.selectedTimeSlice.String()))
+			Debug(DBG_SELCHANGE, "OnWheel dispatcher: last %s, new %s", oldselts.String(), layer.chart.selectedTimeSlice.String())
 			processSelChange()
 		})
 	}
@@ -232,7 +239,7 @@ func (layer *Layer) Resize(newarea Rect) {
 		}
 	}
 
-	Debug(DBG_RESIZE, fmt.Sprintf("%q layer, Resize dpr=%f drawbuffw=%v, drawbuffh=%v", layer.Name, dpr, dbuffwidth, dbuffheight))
+	Debug(DBG_RESIZE, "%q layer, Resize dpr=%f drawbuffw=%v, drawbuffh=%v", layer.Name, dpr, dbuffwidth, dbuffheight)
 
 	// TODO: do not redraw if the size has not changed
 	layer.Redraw()
@@ -260,7 +267,7 @@ func (layer *Layer) RedrawOnlyNeeds() {
 		if drawing.NeedRedraw != nil {
 			need := drawing.NeedRedraw()
 
-			Debug(DBG_SELCHANGE|DBG_REDRAW, fmt.Sprintf("%q/%q layer/drawing, RedrawOnlyNeeds NeedRedraw:%v", layer.Name, drawing.Name, need))
+			Debug(DBG_SELCHANGE|DBG_REDRAW, "%q/%q layer/drawing, RedrawOnlyNeeds NeedRedraw:%v", layer.Name, drawing.Name, need)
 
 			if need {
 				layer.Redraw()

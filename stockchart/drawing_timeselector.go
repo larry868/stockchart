@@ -1,7 +1,6 @@
 package stockchart
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gowebapi/webapi/core/js"
@@ -69,11 +68,11 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 // Buttons's position are updated to make it easy to catch them during a mouse event.
 func (drawing *DrawingTimeSelector) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw fails: unable to proceed given data", drawing.Name))
+		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
 		return
 	}
 
-	Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw drawarea:%s, xAxisRange:%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String()))
+	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String())
 
 	// take into account the selectedTimeSlice at chatr level
 	drawing.dragtimeSelection = drawing.chart.selectedTimeSlice
@@ -119,7 +118,7 @@ func moveButton(layer *DrawingTimeSelector, button *Rect, xcenter float64, ycent
 // OnMouseDown starts dragging
 func (drawing *DrawingTimeSelector) OnMouseDown(xy Point, event *htmlevent.MouseEvent) {
 
-	Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseDown xy:%v, frombutton:%v, tobutton:%v", drawing.Name, xy, drawing.buttonFrom, drawing.buttonTo))
+	Debug(DBG_EVENT, "%q OnMouseDown xy:%v, frombutton:%v, tobutton:%v", drawing.Name, xy, drawing.buttonFrom, drawing.buttonTo)
 
 	// if already dragging and reenter into the canvas
 	if drawing.dragFrom || drawing.dragTo || drawing.dragShift {
@@ -155,7 +154,7 @@ func (drawing *DrawingTimeSelector) OnMouseUp(xy Point, event *htmlevent.MouseEv
 	// update the chart time selection
 	drawing.chart.selectedTimeSlice = drawing.dragtimeSelection
 
-	Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseUp xy:%v, timeselection:%v", drawing.Name, xy, drawing.dragtimeSelection))
+	Debug(DBG_EVENT, "%q OnMouseUp xy:%v, timeselection:%v", drawing.Name, xy, drawing.dragtimeSelection)
 
 	// reset drag flag
 	drawing.dragFrom = false
@@ -176,7 +175,7 @@ func (drawing *DrawingTimeSelector) OnMouseUp(xy Point, event *htmlevent.MouseEv
 // the event dispatcher won't call DoChange as the chart selection has not changed
 func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.MouseEvent) {
 	if drawing.xAxisRange == nil {
-		Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseMove fails, missing data", drawing.Name))
+		Debug(DBG_EVENT, "%q OnMouseMove fails, missing data", drawing.Name)
 		return
 	}
 
@@ -235,7 +234,7 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 // OnWheel manage zoom and shifting the time selection
 func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel fails, missing data", drawing.Name))
+		Debug(DBG_EVENT, "%q OnWheel fails, missing data", drawing.Name)
 		return
 	}
 
@@ -253,7 +252,7 @@ func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 
 	// define a good timestep: 20% of the current duration
 	timeStep := drawing.dragtimeSelection.Duration().Adjust(0.2).Duration
-	Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, shiftKey:%v, dy:%f, timeStep:%v", drawing.Name, event.ShiftKey(), dy, timeStep))
+	Debug(DBG_EVENT, "%q OnWheel, shiftKey:%v, dy:%f, timeStep:%v", drawing.Name, event.ShiftKey(), dy, timeStep)
 
 	if event.ShiftKey() {
 		// shift mode, shift to the future or to the past according to dir
@@ -276,7 +275,7 @@ func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 
 	}
 
-	Debug(DBG_EVENT, fmt.Sprintf("%q OnWheel, newsel=%v", drawing.Name, drawing.dragtimeSelection))
+	Debug(DBG_EVENT, "%q OnWheel, newsel=%v", drawing.Name, drawing.dragtimeSelection)
 
 	// update the chart selected timeslice
 	drawing.chart.selectedTimeSlice = drawing.dragtimeSelection

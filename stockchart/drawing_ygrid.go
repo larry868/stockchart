@@ -1,8 +1,6 @@
 package stockchart
 
 import (
-	"fmt"
-
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/datarange"
@@ -34,13 +32,13 @@ func NewDrawingYGrid(series *DataList, fscale bool) *DrawingYGrid {
 // OnRedraw redraw the Y axis
 func (drawing *DrawingYGrid) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw fails: unable to proceed given data", drawing.Name))
+		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
 		return
 	}
 
 	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
 
-	Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange))
+	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange)
 
 	// setup default text drawing properties
 	drawing.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)

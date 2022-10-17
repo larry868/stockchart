@@ -1,7 +1,6 @@
 package stockchart
 
 import (
-	"fmt"
 	"math"
 	"time"
 
@@ -35,7 +34,7 @@ func NewDrawingCandles(series *DataList) *DrawingCandles {
 // The layer should have been cleared before.
 func (drawing DrawingCandles) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw fails: unable to proceed given data", drawing.Name))
+		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
 		return
 	}
 
@@ -50,7 +49,7 @@ func (drawing DrawingCandles) OnRedraw() {
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, fmt.Sprintf("%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor))
+	Debug(DBG_REDRAW, "%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
 
 	// draw selected data if any
 	if drawing.chart.selectedData != nil {

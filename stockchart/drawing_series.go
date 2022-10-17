@@ -1,8 +1,6 @@
 package stockchart
 
 import (
-	"fmt"
-
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/rgb/v2/bootstrapcolor.go"
@@ -39,7 +37,7 @@ func NewDrawingSeries(series *DataList, fFillArea bool) *DrawingSeries {
 
 func (drawing *DrawingSeries) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw fails: unable to proceed given data", drawing.Name))
+		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
 		return
 	}
 
@@ -48,7 +46,7 @@ func (drawing *DrawingSeries) OnRedraw() {
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, fmt.Sprintf("%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor))
+	Debug(DBG_REDRAW, "%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
 
 	// setup drawing tools
 	drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})

@@ -1,7 +1,6 @@
 package stockchart
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/gowebapi/webapi/core/js"
@@ -33,7 +32,7 @@ func NewDrawingBars(series *DataList) *DrawingBars {
 // The layer should have been cleared before.
 func (drawing DrawingBars) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw fails: unable to proceed given data", drawing.Name))
+		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
 		return
 	}
 
@@ -42,7 +41,7 @@ func (drawing DrawingBars) OnRedraw() {
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, fmt.Sprintf("%q draw area:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor))
+	Debug(DBG_REDRAW, "%q draw area:%s, xAxisRange:%v, xfactor:%f yfactor:%f\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
 
 	// scan all points
 	var rbar *Rect

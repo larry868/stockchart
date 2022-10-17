@@ -1,7 +1,6 @@
 package stockchart
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gowebapi/webapi/core/js"
@@ -33,7 +32,7 @@ func NewDrawingXGrid(series *DataList, fFullGrid bool, timeSelDependant bool) *D
 // OnRedraw DrawingXGrid
 func (drawing DrawingXGrid) OnRedraw() {
 	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw fails: unable to proceed given data", drawing.Name))
+		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
 		return
 	}
 
@@ -42,7 +41,7 @@ func (drawing DrawingXGrid) OnRedraw() {
 	maxscans := float64(drawing.drawArea.Width) / minxstepwidth
 	maskmain := drawing.xAxisRange.GetScanMask(uint(maxscans))
 
-	Debug(DBG_REDRAW, fmt.Sprintf("%q OnRedraw drawarea:%s, xAxisRange:%v, maskmain=%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), maskmain))
+	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, maskmain=%v\n", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), maskmain)
 
 	// setup default text drawing properties
 	drawing.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
