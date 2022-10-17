@@ -38,10 +38,13 @@ func (drawing DrawingBars) OnRedraw() {
 
 	// get xfactor & yfactor according to time selection
 	yrange := drawing.series.VolumeDataRange(drawing.xAxisRange, 0)
+	if yrange.Delta() == 0 {
+		yrange.ResetBoundaries(0, yrange.High())
+	}
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, "%q draw area:%s, xAxisRange:%v, xfactor:%f yfactor:%f", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
+	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, yrange:%v, xfactor:%f yfactor:%f", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange.String(), xfactor, yfactor)
 
 	// scan all points
 	var rbar *Rect

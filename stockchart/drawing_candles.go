@@ -12,16 +12,18 @@ import (
 type DrawingCandles struct {
 	Drawing
 	alphaFactor float32
+	dashstyle   bool
 }
 
 // Drawing factory
 // initAlpha must be within 0 (0% opacity = full transparent) and 1 (100% opacity)
-func NewDrawingCandles(series *DataList, initAlpha float32) *DrawingCandles {
+func NewDrawingCandles(series *DataList, alpha float32, dashstyle bool) *DrawingCandles {
 	drawing := new(DrawingCandles)
 	drawing.Name = "candles"
 	drawing.series = series
 	drawing.MainColor = rgb.Black.Lighten(0.5)
-	drawing.alphaFactor = initAlpha
+	drawing.alphaFactor = alpha
+	drawing.dashstyle = dashstyle
 
 	drawing.Drawing.OnRedraw = func() {
 		drawing.OnRedraw()
@@ -47,7 +49,7 @@ func (drawing DrawingCandles) OnRedraw() {
 	)
 
 	// get xfactor & yfactor according to time selection
-	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
+	yrange := drawing.series.DataRange(&drawing.chart.selectedTimeSlice, 10) //drawing.xAxisRange, 10)
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
@@ -84,22 +86,20 @@ func (drawing DrawingCandles) OnRedraw() {
 			candleColor = redCandle
 		}
 		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(candleColor.Opacify(drawing.alphaFactor).Hexa())})
+		drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(candleColor.Opacify(0.5).Hexa())})
+
+		// calculate padding between candles
+		xpadding := imax(0, int(math.Ceil(xfactor*float64(drawing.chart.MainSeries.Precision)*0.1)))
 
 		// build the OC candle rect, inside the drawing areaa
 		rcandle = new(Rect)
 
 		// x axis: time
-		rcandle.O.X = drawing.drawArea.O.X + int(math.Round(xfactor*float64(item.TimeSlice.From.Sub(drawing.xAxisRange.From))))
 		rcandle.Width = imax(1, int(math.Round(xfactor*d)))
-
-		// add padding between candles
-		// xpadding := int(float64(rcandle.Width) * 0.1)
-		xpadding := imax(1, int(math.Round(xfactor*float64(drawing.chart.MainSeries.Precision)*0.1)))
-		Debug(DBG_REDRAW, "%q padding:%v, precision:%v", drawing.Name, xpadding, drawing.chart.MainSeries.Precision)
-		rcandle.O.X += xpadding
 		rcandle.Width -= 2 * xpadding
+		rcandle.O.X = int(drawing.xTime(item.From)) + xpadding
 
-		// draw the candle only for significant width, otherwise draw the wick only
+		// draw the candle only for significant width, otherwise draw a single LH line
 		if rcandle.Width > 2 {
 
 			// y axis: value
@@ -114,29 +114,59 @@ func (drawing DrawingCandles) OnRedraw() {
 				continue
 			}
 
-			// draw OC
-			drawing.Ctx2D.FillRect(float64(rcandle.O.X), float64(rcandle.O.Y), float64(rcandle.Width), float64(rcandle.Height))
+			// build LH candle-wick rect
+			rwick := new(Rect)
+			if drawing.alphaFactor >= 1 {
+				rwick.Width = imax(xpadding, 1)
+				//			xtimerate := drawing.xAxisRange.Progress(item.TimeSlice.Middle())
+				rwick.O.X = int(math.Round(drawing.xTime(item.Middle()) - float64(rwick.Width)/2.0))
+			} else {
+				rwick.Width = rcandle.Width
+				rwick.O.X = rcandle.O.X
+			}
+
+			// need to reverse the candle in canvas coordinates
+			rwick.O.Y = drawing.drawArea.O.Y + drawing.drawArea.Height - int(yfactor*(item.Low-yrange.Low()))
+			rwick.Height = -int(yfactor * (item.High - item.Low))
+			rwick.FlipPositive()
+
+			if !drawing.dashstyle {
+				// draw OC
+				drawing.Ctx2D.FillRect(float64(rcandle.O.X), float64(rcandle.O.Y), float64(rcandle.Width), float64(rcandle.Height))
+				// draw LH only if inside the drawing area
+				if rwick = drawing.drawArea.And(*rwick); rwick != nil {
+					drawing.Ctx2D.FillRect(float64(rwick.O.X), float64(rwick.O.Y), float64(rwick.Width), float64(rwick.Height))
+				}
+
+			} else {
+				// draw OC
+				drawing.Ctx2D.SetLineDash([]float64{3.0, 3.0})
+				drawing.Ctx2D.StrokeRect(float64(rcandle.O.X)+0.5, float64(rcandle.O.Y)-0.5, float64(rcandle.Width), float64(rcandle.Height))
+				// draw LH only if inside the drawing area
+				if rwick = drawing.drawArea.And(*rwick); rwick != nil {
+					drawing.Ctx2D.SetLineDash([]float64{7.0, 7.0})
+					drawing.Ctx2D.StrokeRect(float64(rwick.O.X)+0.5, float64(rwick.O.Y)-0.5, float64(rwick.Width), float64(rwick.Height))
+				}
+			}
+
+		} else {
+			// build LH candle-wick rect
+			xpos := drawing.xTime(item.TimeSlice.Middle())
+
+			// need to reverse the candle in canvas coordinates
+			ypos := drawing.drawArea.O.Y + drawing.drawArea.Height - int(yfactor*(item.Low-yrange.Low()))
+			yh := -int(yfactor * (item.High - item.Low))
+
+			// draw LH only if inside the drawing area,same color
+			if xpos >= float64(drawing.drawArea.O.X) && xpos <= float64(drawing.drawArea.End().X) {
+				drawing.Ctx2D.FillRect(xpos, float64(ypos), 1.0, float64(yh))
+			}
+
 		}
-
-		// build LH candle-wick rect
-		rwick := new(Rect)
-		rwick.Width = imax(xpadding, 1)
-		xtimerate := drawing.xAxisRange.Progress(item.TimeSlice.Middle())
-		rwick.O.X = drawing.drawArea.O.X + int(float64(drawing.drawArea.Width)*xtimerate) - rwick.Width/2
-
-		// need to reverse the candle in canvas coordinates
-		rwick.O.Y = drawing.drawArea.O.Y + drawing.drawArea.Height - int(yfactor*(item.Low-yrange.Low()))
-		rwick.Height = -int(yfactor * (item.High - item.Low))
-		rwick.FlipPositive()
-
-		// draw LH only if inside the drawing area,same color
-		if rwick = drawing.drawArea.And(*rwick); rwick != nil {
-			drawing.Ctx2D.FillRect(float64(rwick.O.X), float64(rwick.O.Y), float64(rwick.Width), float64(rwick.Height))
-		}
-
 		// scan next item
 		//last = item
 		item = item.Next
+
 	}
 
 	// draw the label of the series

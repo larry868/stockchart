@@ -15,15 +15,16 @@ type DrawingYGrid struct {
 
 func NewDrawingYGrid(series *DataList, fscale bool) *DrawingYGrid {
 	drawing := new(DrawingYGrid)
-	drawing.Name = "yscale"
+	drawing.Name = "ygrid"
 	drawing.series = series
 	drawing.MainColor = rgb.Gray.Lighten(0.85)
 	drawing.fScale = fscale
+
 	drawing.Drawing.OnRedraw = func() {
 		drawing.OnRedraw()
 	}
 	drawing.Drawing.NeedRedraw = func() bool {
-		ynewrange := drawing.series.DataRange(drawing.xAxisRange, 10)
+		ynewrange := drawing.series.DataRange(&drawing.chart.selectedTimeSlice, 10)
 		return !ynewrange.Equal(drawing.lastyrange)
 	}
 	return drawing
@@ -36,7 +37,8 @@ func (drawing *DrawingYGrid) OnRedraw() {
 		return
 	}
 
-	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
+//	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
+	yrange := drawing.series.DataRange(&drawing.chart.selectedTimeSlice, 10)
 
 	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange)
 

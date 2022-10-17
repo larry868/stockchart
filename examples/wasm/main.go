@@ -24,17 +24,20 @@ func main() {
 
 	// build  random dataset for the demo
 	datastart := time.Date(2022, 7, 1, 0, 0, 0, 0, time.UTC)
-	dataset := BuildRandomDataset("BTX/USD x1m", 300, datastart, time.Minute)
-	subdataset := BuildRandomDataset("BTX/USD x30m", 5, datastart, time.Minute*30)
-
+	dataset := BuildRandomDataset("BTX/USD x1m", 500, datastart, time.Minute)
+	
 	// Create a new chart
 	chart, err := stockchart.NewStockChart("mychart", rgb.Gray.Lighten(0.8), *dataset, 0.1)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
+	
+	subdataset1 := BuildRandomDataset("BTX/USD x30m", 5, datastart, time.Minute*30)
+	chart.AddSubChart(4, &stockchart.NewDrawingCandles(subdataset1, 0.1, false).Drawing)
 
-	chart.AddSubChart(4, &stockchart.NewDrawingCandles(subdataset, 0.2).Drawing)
+	subdataset2 := BuildRandomDataset("BTX/USD x100m", 5, datastart, time.Minute*100)
+	chart.AddSubChart(4, &stockchart.NewDrawingCandles(subdataset2, 0.1, true).Drawing)
 
 	// size it the first time to force a full redraw
 	chart.Resize()

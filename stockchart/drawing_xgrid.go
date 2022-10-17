@@ -116,6 +116,6 @@ func (drawing DrawingXGrid) OnRedraw() {
 	strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(drawing.series.Head.To, time.Time{})
 	strtime := drawing.series.Head.To.Format(strdtefmt)
 	drawing.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
-	drawing.DrawTextBox(strtime, Point{X: xpos + 1, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignStart|AlignBottom, rgb.White, drawing.MainColor, 0, 0, 2)
+	drawing.DrawTextBox(strtime, Point{X: int(xpos) + 1, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignStart|AlignBottom, rgb.White, drawing.MainColor, 0, 0, 2)
 
 }

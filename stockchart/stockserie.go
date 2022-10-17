@@ -151,13 +151,16 @@ func (dl DataList) DataRange(ts *timeline.TimeSlice, maxSteps uint) (dr datarang
 	item := dl.Tail
 	for item != nil {
 		// if ts == nil || ((item.TimeSlice.From.Equal(ts.From) || item.TimeSlice.From.After(ts.From)) && (item.TimeSlice.To.Equal(ts.To) || item.TimeSlice.To.Before(ts.To))) {
-		if ts == nil || (ts.WhereIs(item.From)|ts.WhereIs(item.To)&timeline.TS_IN > 0) {
+		if ts == nil || ((ts.WhereIs(item.From)|ts.WhereIs(item.To))&timeline.TS_IN > 0) {
 			if low == 0 || item.Low < low {
 				low = item.Low
 			}
 			if item.High > high {
 				high = item.High
 			}
+		}
+		if item == dl.Head {
+			break
 		}
 		item = item.Next
 	}
@@ -177,7 +180,7 @@ func (dl DataList) VolumeDataRange(ts *timeline.TimeSlice, maxSteps uint) (dr da
 	var low, high float64
 	item := dl.Tail
 	for item != nil {
-		if ts == nil || (ts.WhereIs(item.From)|ts.WhereIs(item.To)&timeline.TS_IN > 0) {
+		if ts == nil || ((ts.WhereIs(item.From)|ts.WhereIs(item.To))&timeline.TS_IN > 0) {
 			if low == 0 || item.Volume < low {
 				low = item.Volume
 			}

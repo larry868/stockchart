@@ -55,7 +55,7 @@ func (chart StockChart) String() string {
 
 // SetMainSeries set or reset the MainSeries of the chart and its drawings. Reset the timerange
 func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64) {
-	
+
 	// clear subchart series
 	for _, player := range pchart.layers {
 		if player != nil {
@@ -68,7 +68,7 @@ func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64) {
 			}
 		}
 	}
-	
+
 	// change the content
 	pchart.MainSeries = series
 
@@ -165,7 +165,8 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList, extendrat
 
 	// the yscale layer
 	if layer := chart.addNewLayer("3-yscale", lAREA_YSCALE, rgb.White, &chart.selectedTimeSlice); layer != nil {
-		layer.AddDrawing(&NewDrawingYGrid(&chart.MainSeries, true).Drawing, rgb.White, true)
+		dr := layer.AddDrawing(&NewDrawingYGrid(&chart.MainSeries, true).Drawing, rgb.White, true)
+		dr.DrawArea = getMainDrawArea
 		chart.layers[3] = layer
 	}
 
@@ -192,7 +193,7 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList, extendrat
 		}
 
 		// The candles
-		dr = layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries, 0.9).Drawing, rgb.White, true)
+		dr = layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries, 1, false).Drawing, rgb.White, true)
 		dr.DrawArea = getMainDrawArea
 
 		chart.layers[4] = layer
@@ -212,7 +213,7 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList, extendrat
 	})
 
 	// size it the first time to force a full redraw
-//	chart.Resize()
+	//	chart.Resize()
 
 	return chart, nil
 }

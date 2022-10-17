@@ -145,13 +145,16 @@ func (drawing *Drawing) DrawTextBox(txt string, xy Point, align Align, backgroun
 }
 
 // return the x position of a specific time withing the drawing area and accoring to the xAxisRange
-func (drawing *Drawing) xTime(at time.Time) int {
-	xpos := drawing.drawArea.O.X + int(math.Round(float64(drawing.drawArea.Width)*drawing.xAxisRange.Progress(at)))
-	return xpos
+func (drawing *Drawing) xTime(at time.Time) ( xpos float64) {
+
+	dx := float64(at.Sub(drawing.xAxisRange.From))
+	drange := float64(drawing.xAxisRange.Duration().Duration)
+	f := math.Round(float64(drawing.drawArea.Width) * dx / drange)
+	return float64(drawing.drawArea.O.X) + f
 }
 
 // Draw Vertical Line
-func (drawing *Drawing) DrawVLine(at time.Time, color rgb.Color, full bool) (xpos int) {
+func (drawing *Drawing) DrawVLine(at time.Time, color rgb.Color, full bool) (xpos float64) {
 	
 	if drawing.xAxisRange.WhereIs(at)&timeline.TS_IN > 0 {
 
@@ -159,6 +162,7 @@ func (drawing *Drawing) DrawVLine(at time.Time, color rgb.Color, full bool) (xpo
 		
 		drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(color.Hexa())})
 		drawing.Ctx2D.SetLineWidth(1)
+		drawing.Ctx2D.SetLineDash([]float64{})
 
 		drawing.Ctx2D.BeginPath()
 		if full {
