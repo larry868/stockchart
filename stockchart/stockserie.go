@@ -35,7 +35,7 @@ func (dp *DataStock) String() string {
 // DataList is a time ordered chained list of DataPoint.
 // We assume that ordered points are linked in chronological order
 type DataList struct {
-	Name string
+	Name              string        // the name of the data list, usually the name of the pair and its precision
 	Tail *DataStock // the tail !-----...
 	Head *DataStock // ...-----! the head
 }
@@ -49,10 +49,13 @@ func (dl DataList) IsEmpty() bool {
 	return dl.Head == nil
 }
 
-func (pdl *DataList) Reset() {
-	pdl.Tail = nil
-	pdl.Head = nil
-}
+// func (pdl *DataList) Reset() {
+// 	pdl.Tail = nil
+// 	pdl.Head = nil
+// 	pdl.Aggregate = nil
+// 	pdl.AggregateLevel = 0
+// 	pdl.AggregateDuration = 0
+// }
 
 func (pdl DataList) Size() (size int) {
 	scan := pdl.Head
