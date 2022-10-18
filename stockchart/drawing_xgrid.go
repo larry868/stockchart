@@ -113,9 +113,12 @@ func (drawing DrawingXGrid) OnRedraw() {
 	xpos := drawing.DrawVLine(drawing.series.Head.To, drawing.MainColor.Opacify(0.5), true)
 
 	// draw the ending date
-	strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(drawing.series.Head.To, time.Time{})
-	strtime := drawing.series.Head.To.Format(strdtefmt)
-	drawing.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
-	drawing.DrawTextBox(strtime, Point{X: int(xpos) + 1, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignStart|AlignBottom, rgb.White, drawing.MainColor, 0, 0, 2)
+	if xpos >= 0 {
+
+		strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(drawing.series.Head.To, time.Time{})
+		strtime := drawing.series.Head.To.Format(strdtefmt)
+		drawing.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
+		drawing.DrawTextBox(strtime, Point{X: int(xpos) + 1, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignStart|AlignBottom, rgb.White, drawing.MainColor, 0, 0, 2)
+	}
 
 }

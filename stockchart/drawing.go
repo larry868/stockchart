@@ -56,12 +56,13 @@ const (
 	AlignBottom Align = 0b00001000
 )
 
-// SetMainSeries set or reset the MainSeries of the chart and its drawings. Reset the timerange
+// SetMainSeries set or reset the MainSeries of the chart and its drawings. Reset the timerange.
+// Need to redraw
 func (drawing *Drawing) ResetSeries(series *DataList) {
 	// change the content
 	drawing.series = series
 
-	drawing.Layer.Redraw()
+	// drawing.Layer.Redraw()
 }
 
 // DrawTextBox draw a text within a box. 
@@ -153,7 +154,8 @@ func (drawing *Drawing) xTime(at time.Time) ( xpos float64) {
 	return float64(drawing.drawArea.O.X) + f
 }
 
-// Draw Vertical Line
+// Draw Vertical Line.
+// returns -1 if at is out of range
 func (drawing *Drawing) DrawVLine(at time.Time, color rgb.Color, full bool) (xpos float64) {
 	
 	if drawing.xAxisRange.WhereIs(at)&timeline.TS_IN > 0 {
@@ -173,6 +175,9 @@ func (drawing *Drawing) DrawVLine(at time.Time, color rgb.Color, full bool) (xpo
 			drawing.Ctx2D.LineTo(float64(xpos)+0.5, float64(drawing.drawArea.O.Y+drawing.drawArea.Height))
 		}
 		drawing.Ctx2D.Stroke()
+	} else {
+		return -1.0
 	}
+
 	return xpos
 }

@@ -54,7 +54,7 @@ func (chart StockChart) String() string {
 }
 
 // SetMainSeries set or reset the MainSeries of the chart and its drawings. Reset the timerange
-func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64) {
+func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64, redrawNow bool) {
 
 	// clear subchart series
 	for _, player := range pchart.layers {
@@ -76,7 +76,9 @@ func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64) {
 	pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), extendrate)
 
 	// Redraw, without subcharts
-	pchart.Redraw()
+	if redrawNow {
+		pchart.Redraw()
+	}
 }
 
 // AddSubChart add another drawing to draw within the same X and Y ranges than the main series on the choosen layer.
@@ -370,7 +372,7 @@ func (pchart *StockChart) DoSelChangeTimeSlice(strpair string, newts timeline.Ti
 	pchart.RedrawOnlyNeeds()
 
 	if pchart.NotifySelChangeTimeSlice != nil && fNotify {
-		pchart.NotifySelChangeTimeSlice(strpair, pchart.selectedTimeSlice)
+		pchart.NotifySelChangeTimeSlice(strpair, newts)
 	}
 }
 

@@ -28,7 +28,7 @@ func (dp *DataStock) String() string {
 	if dp == nil {
 		return "nil"
 	}
-	str := fmt.Sprintf("o=%v h=%v l=%v c=%v v=%v at:%s\n", dp.Open, dp.High, dp.Low, dp.Close, dp.Volume, dp.TimeSlice)
+	str := fmt.Sprintf("o=%v h=%v l=%v c=%v v=%v at:%s", dp.Open, dp.High, dp.Low, dp.Close, dp.Volume, dp.TimeSlice)
 	return str
 }
 
@@ -42,7 +42,7 @@ type DataList struct {
 }
 
 func (dl DataList) String() string {
-	str := fmt.Sprintf("list size:%v, timeslice:%s, datarange:%s", dl.Size(), dl.TimeSlice(), dl.DataRange(nil, 0))
+	str := fmt.Sprintf("DataList %q size:%v, timeslice:%s, datarange:%s", dl.Name, dl.Size(), dl.TimeSlice(), dl.DataRange(nil, 0))
 	return str
 }
 

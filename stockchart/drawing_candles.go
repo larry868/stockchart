@@ -37,7 +37,7 @@ func NewDrawingCandles(series *DataList, alpha float32, dashstyle bool) *Drawing
 // OnRedraw redraws all candles inside the xAxisRange of the OHLC series
 // The layer should have been cleared before.
 func (drawing DrawingCandles) OnRedraw() {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
+	if drawing.series == nil || drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
 		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
 		return
 	}
@@ -53,7 +53,9 @@ func (drawing DrawingCandles) OnRedraw() {
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, "%q drawarea:%s, xAxisRange:%v, xfactor:%f yfactor:%f", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), xfactor, yfactor)
+	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xfactor:%f yfactor:%f alphaFactor::%f", drawing.Name, drawing.drawArea, xfactor, yfactor, drawing.alphaFactor)
+	//Debug(DBG_REDRAW, "%q OnRedraw xAxisRange:%v,", drawing.Name, drawing.xAxisRange.String())
+	//Debug(DBG_REDRAW, "%q OnRedraw serie:%v", drawing.Name, drawing.series.String())
 
 	// draw selected data if any
 	if drawing.chart.selectedData != nil {
@@ -149,8 +151,8 @@ func (drawing DrawingCandles) OnRedraw() {
 				}
 			}
 
-		} else {
-			// build LH candle-wick rect
+		} else if drawing.alphaFactor >= 1 && !drawing.dashstyle {
+			// build LH single line, only if not an alpha drawing and not in dash style
 			xpos := drawing.xTime(item.TimeSlice.Middle())
 
 			// need to reverse the candle in canvas coordinates
@@ -170,7 +172,8 @@ func (drawing DrawingCandles) OnRedraw() {
 	}
 
 	// draw the label of the series
-	// TODO: overwritting when multiple drawings on the same chart
-	drawing.Ctx2D.SetFont(`14px 'Roboto', sans-serif`)
-	drawing.DrawTextBox(drawing.series.Name, Point{X: 0, Y: 0}, AlignStart|AlignTop, rgb.White, drawing.MainColor, 3, 0, 2)
+	if drawing.alphaFactor >= 1 && !drawing.dashstyle {
+		drawing.Ctx2D.SetFont(`14px 'Roboto', sans-serif`)
+		drawing.DrawTextBox(drawing.series.Name, Point{X: 0, Y: 0}, AlignStart|AlignTop, rgb.White, drawing.MainColor, 3, 0, 2)
+	}
 }
