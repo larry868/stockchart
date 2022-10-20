@@ -20,28 +20,22 @@ func NewDrawingHoverCandles(series *DataList) *DrawingHoverCandles {
 	drawing.Name = "hovercandles"
 	drawing.series = series
 	drawing.MainColor = rgb.Black.Lighten(0.5)
+
 	drawing.Drawing.OnMouseMove = func(xy Point, event *htmlevent.MouseEvent) {
-		drawing.OnMouseMove(xy, event)
+		drawing.onMouseMove(xy, event)
 	}
 	drawing.Drawing.OnClick = func(xy Point, event *htmlevent.MouseEvent) {
-		drawing.OnClick(xy, event)
+		drawing.onClick(xy, event)
 	}
 	drawing.Drawing.OnMouseLeave = func(xy Point, event *htmlevent.MouseEvent) {
 		drawing.hoverData = nil
 		drawing.Clear()
 	}
-	drawing.Drawing.NeedRedraw = func() bool {
-		return true
-	}
 	return drawing
 }
 
 // draw the line over the candle where the mouse is
-func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.MouseEvent) {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_EVENT, "%q OnMouseMove fails, missing data", drawing.Name)
-		return
-	}
+func (drawing *DrawingHoverCandles) onMouseMove(xy Point, event *htmlevent.MouseEvent) {
 
 	// get the candle
 	trate := drawing.drawArea.XRate(xy.X)
@@ -72,18 +66,10 @@ func (drawing *DrawingHoverCandles) OnMouseMove(xy Point, event *htmlevent.Mouse
 	strtime := middletime.Format(strdtefmt)
 	drawing.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
 	drawing.DrawTextBox(strtime, Point{X: xpos, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignCenter|AlignBottom, rgb.White, drawing.MainColor, 5, 1, 1)
-
 }
 
 // select a candle
-func (drawing *DrawingHoverCandles) OnClick(xy Point, event *htmlevent.MouseEvent) {
-
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		drawing.chart.selectedData = nil
-		Debug(DBG_EVENT, "%q OnClick fails, missing data", drawing.Name)
-		return
-	}
-
+func (drawing *DrawingHoverCandles) onClick(xy Point, event *htmlevent.MouseEvent) {
 	// get the candle
 	trate := drawing.drawArea.XRate(xy.X)
 	postime := drawing.xAxisRange.WhatTime(trate)

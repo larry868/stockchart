@@ -6,11 +6,15 @@ import (
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/rgb/v2"
+	"github.com/sunraylab/timeline/v2"
+	"github.com/sunraylab/verbose"
 )
 
 // Drawing a series of bars like for volumes
 type DrawingBars struct {
 	Drawing
+
+	lastSelectedTimeslice timeline.TimeSlice
 }
 
 // Drawing factory
@@ -19,22 +23,21 @@ func NewDrawingBars(series *DataList) *DrawingBars {
 	drawing.Name = "bars"
 	drawing.series = series
 	drawing.MainColor = rgb.Gray
+
 	drawing.Drawing.OnRedraw = func() {
-		drawing.OnRedraw()
+		drawing.lastSelectedTimeslice = drawing.chart.selectedTimeSlice
+		drawing.onRedraw()
 	}
+
 	drawing.Drawing.NeedRedraw = func() bool {
-		return true
+		return drawing.lastSelectedTimeslice.Compare(drawing.chart.selectedTimeSlice) != timeline.EQUAL
 	}
 	return drawing
 }
 
 // OnRedraw redraws all bars inside the xAxisRange of the OHLC series
 // The layer should have been cleared before.
-func (drawing DrawingBars) OnRedraw() {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
-		return
-	}
+func (drawing DrawingBars) onRedraw() {
 
 	// get xfactor & yfactor according to time selection
 	yrange := drawing.series.VolumeDataRange(drawing.xAxisRange, 0)
@@ -44,7 +47,7 @@ func (drawing DrawingBars) OnRedraw() {
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, yrange:%v, xfactor:%f yfactor:%f", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange.String(), xfactor, yfactor)
+	verbose.Debug("%q OnRedraw drawarea:%s, xAxisRange:%v, yrange:%v, xfactor:%f yfactor:%f", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange.String(), xfactor, yfactor)
 
 	// scan all points
 	var rbar *Rect
@@ -74,6 +77,7 @@ func (drawing DrawingBars) OnRedraw() {
 		rbar.Width = imax(1, int(math.Round(xfactor*d)))
 
 		// add padding between bars
+		// TODO:
 		xpadding := int(float64(rbar.Width) * 0.1)
 		rbar.O.X += xpadding
 		rbar.Width -= 2 * xpadding

@@ -8,3 +8,5 @@ github.com/sunraylab/timeline/v2 v2.3.1 h1:9+jD3i+Vo0QhO6jFpKHaJ2lA0Ws9wYx9B8uom
 github.com/sunraylab/timeline/v2 v2.3.1/go.mod h1:+NNSjWTWaJiLIxJcgqcdm2+0bgn7btzxnZJBVWp4BYo=
 github.com/sunraylab/verbose v1.2.3 h1:CGKlchQthEe/6+smcLwXFUsJF1taGDbMJK0DzUJ5+OI=
 github.com/sunraylab/verbose v1.2.3/go.mod h1:j6ioDGFaZJdXnqaoDO44rbxsFWQvbg/GvqIROFx7Vyc=
+github.com/sunraylab/verbose v1.2.4 h1:+SAcM6GONNqYweYWA1zJHCw1XkQBCGqN7TCU6D9YKLY=
+github.com/sunraylab/verbose v1.2.4/go.mod h1:j6ioDGFaZJdXnqaoDO44rbxsFWQvbg/GvqIROFx7Vyc=

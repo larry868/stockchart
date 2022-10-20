@@ -37,6 +37,10 @@ type Drawing struct {
 	NeedRedraw   func() bool
 }
 
+func (drawing Drawing) hasNonEmptySeries() bool {
+	return drawing.series != nil && !drawing.series.IsEmpty()
+}
+
 func (drawing Drawing) String() string {
 	strxrange := "missing"
 	if drawing.xAxisRange != nil {
@@ -65,7 +69,7 @@ func (drawing *Drawing) ResetSeries(series *DataList) {
 	// drawing.Layer.Redraw()
 }
 
-// DrawTextBox draw a text within a box. 
+// DrawTextBox draw a text within a box.
 //
 // xy position is defined in a canvas coordinates and corresponds to the corner defined
 // by align, the border, the margin and the padding.
@@ -146,7 +150,7 @@ func (drawing *Drawing) DrawTextBox(txt string, xy Point, align Align, backgroun
 }
 
 // return the x position of a specific time withing the drawing area and accoring to the xAxisRange
-func (drawing *Drawing) xTime(at time.Time) ( xpos float64) {
+func (drawing *Drawing) xTime(at time.Time) (xpos float64) {
 
 	dx := float64(at.Sub(drawing.xAxisRange.From))
 	drange := float64(drawing.xAxisRange.Duration().Duration)
@@ -157,11 +161,11 @@ func (drawing *Drawing) xTime(at time.Time) ( xpos float64) {
 // Draw Vertical Line.
 // returns -1 if at is out of range
 func (drawing *Drawing) DrawVLine(at time.Time, color rgb.Color, full bool) (xpos float64) {
-	
+
 	if drawing.xAxisRange.WhereIs(at)&timeline.TS_IN > 0 {
 
 		xpos = drawing.xTime(at)
-		
+
 		drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(color.Hexa())})
 		drawing.Ctx2D.SetLineWidth(1)
 		drawing.Ctx2D.SetLineDash([]float64{})

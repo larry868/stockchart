@@ -21,7 +21,11 @@ func NewDrawingYGrid(series *DataList, fscale bool) *DrawingYGrid {
 	drawing.fScale = fscale
 
 	drawing.Drawing.OnRedraw = func() {
-		drawing.OnRedraw()
+		//	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
+		drawing.chart.yAxisRange = drawing.series.DataRange(&drawing.chart.selectedTimeSlice, 10)
+		drawing.lastyrange = drawing.chart.yAxisRange
+		Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), drawing.chart.yAxisRange)
+		drawing.onRedraw()
 	}
 	drawing.Drawing.NeedRedraw = func() bool {
 		ynewrange := drawing.series.DataRange(&drawing.chart.selectedTimeSlice, 10)
@@ -31,16 +35,7 @@ func NewDrawingYGrid(series *DataList, fscale bool) *DrawingYGrid {
 }
 
 // OnRedraw redraw the Y axis
-func (drawing *DrawingYGrid) OnRedraw() {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
-		return
-	}
-
-//	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
-	yrange := drawing.series.DataRange(&drawing.chart.selectedTimeSlice, 10)
-
-	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange)
+func (drawing DrawingYGrid) onRedraw() {
 
 	// setup default text drawing properties
 	drawing.Ctx2D.SetTextAlign(canvas.StartCanvasTextAlign)
@@ -48,6 +43,7 @@ func (drawing *DrawingYGrid) OnRedraw() {
 	drawing.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
 
 	// draw the Y Scale
+	yrange := drawing.chart.yAxisRange
 	for val := yrange.High(); val >= yrange.Low() && yrange.StepSize() > 0; val -= yrange.StepSize() {
 
 		// calculate ypos
@@ -70,6 +66,4 @@ func (drawing *DrawingYGrid) OnRedraw() {
 			drawing.Ctx2D.FillText(strvalue, float64(drawing.drawArea.O.Y+7), ypos+1, nil)
 		}
 	}
-
-	drawing.lastyrange = yrange
 }

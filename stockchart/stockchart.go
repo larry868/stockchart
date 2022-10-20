@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/sunraylab/datarange"
 	"github.com/sunraylab/rgb/v2"
 	"github.com/sunraylab/timeline/v2"
 	"github.com/sunraylab/verbose"
@@ -29,10 +30,11 @@ type StockChart struct {
 	isDrawing bool         // flag signaling a drawing in progress
 
 	MainSeries        DataList
-	timeRange         timeline.TimeSlice // the overall time range to display
-	selectedTimeSlice timeline.TimeSlice // the current time slice selected, IsZero if none
-	selectedData      *DataStock         // the current data selected, nil if none
-	localZone         bool               // Show local zone time, otherwise show UTC time
+	timeRange         timeline.TimeSlice  // the overall time range to display
+	selectedTimeSlice timeline.TimeSlice  // the current time slice selected, IsZero if none
+	selectedData      *DataStock          // the current data selected, nil if none
+	localZone         bool                // Show local zone time, otherwise show UTC time
+	yAxisRange        datarange.DataRange // the yAxisRange calculated by the YGrid, can be used by any drawing on the chart layer and above
 
 	NotifySelChangeTimeSlice func(strpair string, ts timeline.TimeSlice) // function called everytime the timeselection change, if not nil
 	NotifySelChangeData      func(strpair string, data *DataStock)
@@ -70,7 +72,7 @@ func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64, r
 		}
 	}
 
-	// change the content
+	// change the series, referenced by all Drawings unless subchart
 	pchart.MainSeries = series
 
 	// reset time range

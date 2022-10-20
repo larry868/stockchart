@@ -12,7 +12,9 @@ import (
 type DrawingXGrid struct {
 	Drawing
 	fFullGrid     bool // draw grids otherwise only labels
+	
 	lastlocalZone bool
+	lastSelectedTimeslice timeline.TimeSlice
 }
 
 func NewDrawingXGrid(series *DataList, fFullGrid bool, timeSelDependant bool) *DrawingXGrid {
@@ -21,21 +23,21 @@ func NewDrawingXGrid(series *DataList, fFullGrid bool, timeSelDependant bool) *D
 	drawing.fFullGrid = fFullGrid
 	drawing.series = series
 	drawing.MainColor = rgb.Gray
+
 	drawing.Drawing.OnRedraw = func() {
-		drawing.OnRedraw()
+		drawing.lastlocalZone = drawing.chart.localZone
+		drawing.lastSelectedTimeslice = drawing.chart.selectedTimeSlice
+		drawing.onRedraw()
 	}
+
 	drawing.Drawing.NeedRedraw = func() bool {
-		return timeSelDependant || drawing.chart.localZone != drawing.lastlocalZone
+		return timeSelDependant && (drawing.lastSelectedTimeslice.Compare(drawing.chart.selectedTimeSlice)!=timeline.EQUAL) || (drawing.chart.localZone != drawing.lastlocalZone)
 	}
 	return drawing
 }
 
 // OnRedraw DrawingXGrid
-func (drawing DrawingXGrid) OnRedraw() {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
-		return
-	}
+func (drawing DrawingXGrid) onRedraw() {
 
 	// define the grid scale
 	const minxstepwidth = 100.0
@@ -100,7 +102,6 @@ func (drawing DrawingXGrid) OnRedraw() {
 		// draw time label if not overlapping last label
 		if (xpos + 2) > lastlabelend {
 			strdtefmt := maskmain.GetTimeFormat(xtime, lastxtime)
-			drawing.lastlocalZone = drawing.chart.localZone
 			var label string
 			if drawing.chart.localZone {
 				label = xtime.Local().Format(strdtefmt)
@@ -123,7 +124,12 @@ func (drawing DrawingXGrid) OnRedraw() {
 	if xpos >= 0 {
 
 		strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(drawing.series.Head.To, time.Time{})
-		strtime := drawing.series.Head.To.Format(strdtefmt)
+		var strtime string
+		if drawing.chart.localZone {
+			strtime = drawing.series.Head.To.Local().Format(strdtefmt)
+		} else {
+			strtime = drawing.series.Head.To.UTC().Format(strdtefmt)
+		}
 		drawing.Ctx2D.SetFont(`10px 'Roboto', sans-serif`)
 		drawing.DrawTextBox(strtime, Point{X: int(xpos) + 1, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignStart|AlignBottom, rgb.White, drawing.MainColor, 0, 0, 2)
 	}

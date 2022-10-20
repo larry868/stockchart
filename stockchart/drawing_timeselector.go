@@ -40,22 +40,27 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 	drawing.MinZoomTime = time.Minute * 5
 
 	drawing.Drawing.OnRedraw = func() {
-		drawing.OnRedraw()
+		drawing.dragtimeSelection = drawing.chart.selectedTimeSlice
+		// NOTA: xAxisRange is pointing to the overall &chart.timeRange and not to the &chart.selectedTimeSlice
+		Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String())
+		drawing.onRedraw()
 	}
 	drawing.Drawing.OnMouseDown = func(xy Point, event *htmlevent.MouseEvent) {
-		drawing.OnMouseDown(xy, event)
+		Debug(DBG_EVENT, "%q OnMouseDown xy:%v, frombutton:%v, tobutton:%v", drawing.Name, xy, drawing.buttonFrom, drawing.buttonTo)
+		drawing.onMouseDown(xy, event)
 	}
 	drawing.Drawing.OnMouseUp = func(xy Point, event *htmlevent.MouseEvent) {
-		drawing.OnMouseUp(xy, event)
+		drawing.onMouseUp(xy, event)
 	}
 	drawing.Drawing.OnMouseMove = func(xy Point, event *htmlevent.MouseEvent) {
-		drawing.OnMouseMove(xy, event)
+		//	Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseMove xy:%v", drawing.Name, xy))
+		drawing.onMouseMove(xy, event)
 	}
 	drawing.Drawing.OnMouseLeave = func(xy Point, event *htmlevent.MouseEvent) {
-		drawing.OnMouseUp(xy, event)
+		drawing.onMouseUp(xy, event)
 	}
 	drawing.Drawing.OnWheel = func(event *htmlevent.WheelEvent) {
-		drawing.OnWheel(event)
+		drawing.onWheel(event)
 	}
 	drawing.Drawing.NeedRedraw = func() bool {
 		return drawing.dragtimeSelection != drawing.chart.selectedTimeSlice
@@ -66,23 +71,8 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 
 // OnRedrawTimeSelector draws the timeslice selector on top of the navbar.
 // Buttons's position are updated to make it easy to catch them during a mouse event.
-func (drawing *DrawingTimeSelector) OnRedraw() {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
-		return
-	}
-
-	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String())
-
-	// take into account the selectedTimeSlice at chatr level
-	drawing.dragtimeSelection = drawing.chart.selectedTimeSlice
-
-	drawing.redraw()
-
-}
-
 // local redraw, based on the current drawing selection
-func (drawing *DrawingTimeSelector) redraw() {
+func (drawing *DrawingTimeSelector) onRedraw() {
 
 	// get the y center for redrawing the buttons
 	ycenter := float64(drawing.drawArea.O.Y) + float64(drawing.drawArea.Height)/2.0
@@ -116,9 +106,7 @@ func moveButton(layer *DrawingTimeSelector, button *Rect, xcenter float64, ycent
 }
 
 // OnMouseDown starts dragging
-func (drawing *DrawingTimeSelector) OnMouseDown(xy Point, event *htmlevent.MouseEvent) {
-
-	Debug(DBG_EVENT, "%q OnMouseDown xy:%v, frombutton:%v, tobutton:%v", drawing.Name, xy, drawing.buttonFrom, drawing.buttonTo)
+func (drawing *DrawingTimeSelector) onMouseDown(xy Point, event *htmlevent.MouseEvent) {
 
 	// if already dragging and reenter into the canvas
 	if drawing.dragFrom || drawing.dragTo || drawing.dragShift {
@@ -149,7 +137,7 @@ func (drawing *DrawingTimeSelector) OnMouseDown(xy Point, event *htmlevent.Mouse
 // OnMouseUp Stops Dragging and update the chart.timeSelection.
 //
 // If the timeselection changes then the event dispatcher will call OnChangeTimeSelection on all drawings of all layers.
-func (drawing *DrawingTimeSelector) OnMouseUp(xy Point, event *htmlevent.MouseEvent) {
+func (drawing *DrawingTimeSelector) onMouseUp(xy Point, event *htmlevent.MouseEvent) {
 
 	// update the chart time selection
 	drawing.chart.selectedTimeSlice = drawing.dragtimeSelection
@@ -173,13 +161,7 @@ func (drawing *DrawingTimeSelector) OnMouseUp(xy Point, event *htmlevent.MouseEv
 //
 // If the local timeselection changes then redraw this drawing only
 // the event dispatcher won't call DoChange as the chart selection has not changed
-func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.MouseEvent) {
-	if drawing.xAxisRange == nil {
-		Debug(DBG_EVENT, "%q OnMouseMove fails, missing data", drawing.Name)
-		return
-	}
-
-	//	Debug(DBG_EVENT, fmt.Sprintf("%q OnMouseMove xy:%v", drawing.Name, xy))
+func (drawing *DrawingTimeSelector) onMouseMove(xy Point, event *htmlevent.MouseEvent) {
 
 	// change cursor if we start overing a button
 	if (xy.IsIn(drawing.buttonFrom) || xy.IsIn(drawing.buttonTo)) && !drawing.isCursorResize {
@@ -225,19 +207,14 @@ func (drawing *DrawingTimeSelector) OnMouseMove(xy Point, event *htmlevent.Mouse
 
 		if fRedraw {
 			drawing.Clear()
-			drawing.redraw()
+			drawing.onRedraw()
 
 		}
 	}
 }
 
 // OnWheel manage zoom and shifting the time selection
-func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
-	if drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_EVENT, "%q OnWheel fails, missing data", drawing.Name)
-		return
-	}
-
+func (drawing *DrawingTimeSelector) onWheel(event *htmlevent.WheelEvent) {
 	// get the wheel move
 	dir := time.Duration(0)
 	dy := event.DeltaY()
@@ -283,5 +260,5 @@ func (drawing *DrawingTimeSelector) OnWheel(event *htmlevent.WheelEvent) {
 	// the event dispatrcher will not propagate the change here because we need to keep the dragtimeSelection
 	// so force a clear and a local redraw
 	drawing.Clear()
-	drawing.redraw()
+	drawing.onRedraw()
 }

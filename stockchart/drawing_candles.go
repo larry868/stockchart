@@ -6,6 +6,7 @@ import (
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/rgb/v2"
+	"github.com/sunraylab/timeline/v2"
 )
 
 // Drawing a series of Candles
@@ -13,6 +14,9 @@ type DrawingCandles struct {
 	Drawing
 	alphaFactor float32
 	dashstyle   bool
+
+	lastSelectedTimeslice timeline.TimeSlice
+	lastSelectedData      *DataStock
 }
 
 // Drawing factory
@@ -26,22 +30,21 @@ func NewDrawingCandles(series *DataList, alpha float32, dashstyle bool) *Drawing
 	drawing.dashstyle = dashstyle
 
 	drawing.Drawing.OnRedraw = func() {
-		drawing.OnRedraw()
+		drawing.lastSelectedTimeslice = drawing.chart.selectedTimeSlice
+		drawing.lastSelectedData = drawing.chart.selectedData
+		drawing.onRedraw()
 	}
 	drawing.Drawing.NeedRedraw = func() bool {
-		return true
+		fneedst := drawing.lastSelectedTimeslice.Compare(drawing.chart.selectedTimeSlice) != timeline.EQUAL
+		fneedsd := drawing.lastSelectedData != drawing.chart.selectedData
+		return fneedst || fneedsd
 	}
 	return drawing
 }
 
 // OnRedraw redraws all candles inside the xAxisRange of the OHLC series
 // The layer should have been cleared before.
-func (drawing DrawingCandles) OnRedraw() {
-	if drawing.series == nil || drawing.series.IsEmpty() || drawing.xAxisRange == nil || !drawing.xAxisRange.Duration().IsFinite || drawing.xAxisRange.Duration().Seconds() < 0 {
-		Debug(DBG_REDRAW, "%q OnRedraw fails: unable to proceed given data", drawing.Name)
-		return
-	}
-
+func (drawing DrawingCandles) onRedraw() {
 	var (
 		greenCandle   = rgb.Color(0x7dce13ff)
 		redCandle     = rgb.Color(0xb20016ff)
@@ -49,13 +52,14 @@ func (drawing DrawingCandles) OnRedraw() {
 	)
 
 	// get xfactor & yfactor according to time selection
-	yrange := drawing.series.DataRange(&drawing.chart.selectedTimeSlice, 10) //drawing.xAxisRange, 10)
+	//yrange := drawing.series.DataRange(drawing.xAxisRange, 10) //drawing.xAxisRange, 10)   drawing.chart.selectedTimeSlice
+	yrange := drawing.chart.yAxisRange
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
 	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xfactor:%f yfactor:%f alphaFactor::%f", drawing.Name, drawing.drawArea, xfactor, yfactor, drawing.alphaFactor)
 	//Debug(DBG_REDRAW, "%q OnRedraw xAxisRange:%v,", drawing.Name, drawing.xAxisRange.String())
-	//Debug(DBG_REDRAW, "%q OnRedraw serie:%v", drawing.Name, drawing.series.String())
+	Debug(DBG_REDRAW, "%q OnRedraw serie:%v seltime:%s, yrange;%s", drawing.Name, drawing.series.String(), drawing.xAxisRange, yrange)
 
 	// draw selected data if any
 	if drawing.chart.selectedData != nil {

@@ -7,5 +7,5 @@ require (
 	github.com/sunraylab/datarange v1.1.1
 	github.com/sunraylab/rgb/v2 v2.0.2
 	github.com/sunraylab/timeline/v2 v2.3.1
-	github.com/sunraylab/verbose v1.2.3
+	github.com/sunraylab/verbose v1.2.4
 )

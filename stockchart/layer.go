@@ -36,7 +36,8 @@ type Layer struct {
 	layout  layoutT                  // The layout of this layer within the chart
 
 	xAxisRange *timeline.TimeSlice // the timeslice to show and draw on this layer
-	drawings   []*Drawing          // stack of drawings
+
+	drawings []*Drawing // stack of drawings
 }
 
 func NewLayer(id string, chart *StockChart, layout layoutT, xaxisrange *timeline.TimeSlice, canvasE canvas.HTMLCanvasElement) *Layer {
@@ -72,6 +73,10 @@ func (layer Layer) String() string {
 	return str
 }
 
+func (layer Layer) hasValidXAxisRange() bool {
+	return layer.xAxisRange != nil && layer.xAxisRange.Duration().IsFinite && layer.xAxisRange.Duration().Seconds() >= 1
+}
+
 // SetEventDispatcher activates mouse event handler on the canvas of the layer.
 // When setup, if the mouse is located in the cliparea of the layer,
 // the event is propagated to all drawings having defined their own MouseEvent func.
@@ -101,10 +106,16 @@ func (layer *Layer) SetEventDispatcher() {
 		layer.canvasE.SetOnMouseDown(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 			xy := getMouseXY(event)
 			if xy.IsIn(layer.ClipArea) {
+				if !layer.hasValidXAxisRange() {
+					return
+				}
 				oldselts = layer.chart.selectedTimeSlice
 				oldseldata = layer.chart.selectedData
 				for _, drawing := range layer.drawings {
 					if drawing.OnMouseDown != nil {
+						if !drawing.hasNonEmptySeries() {
+							continue
+						}
 						drawing.OnMouseDown(xy, event)
 					}
 				}
@@ -115,11 +126,17 @@ func (layer *Layer) SetEventDispatcher() {
 
 	if (hme & evt_MouseUp) != 0 {
 		layer.canvasE.SetOnMouseUp(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
+			if !layer.hasValidXAxisRange() {
+				return
+			}
 			xy := getMouseXY(event)
 			oldselts = layer.chart.selectedTimeSlice
 			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseUp != nil {
+					if !drawing.hasNonEmptySeries() {
+						continue
+					}
 					drawing.OnMouseUp(xy, event)
 				}
 			}
@@ -129,11 +146,17 @@ func (layer *Layer) SetEventDispatcher() {
 
 	if (hme & evt_MouseMove) != 0 {
 		layer.canvasE.SetOnMouseMove(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
+			if !layer.hasValidXAxisRange() {
+				return
+			}
 			xy := getMouseXY(event)
 			oldselts = layer.chart.selectedTimeSlice
 			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseMove != nil {
+					if !drawing.hasNonEmptySeries() {
+						continue
+					}
 					drawing.OnMouseMove(xy, event)
 				}
 			}
@@ -143,11 +166,17 @@ func (layer *Layer) SetEventDispatcher() {
 
 	if (hme & evt_MouseEnter) != 0 {
 		layer.canvasE.SetOnMouseEnter(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
+			if !layer.hasValidXAxisRange() {
+				return
+			}
 			xy := getMouseXY(event)
 			oldselts = layer.chart.selectedTimeSlice
 			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseEnter != nil {
+					if !drawing.hasNonEmptySeries() {
+						continue
+					}
 					drawing.OnMouseEnter(xy, event)
 				}
 			}
@@ -157,11 +186,17 @@ func (layer *Layer) SetEventDispatcher() {
 
 	if (hme & evt_MouseLeave) != 0 {
 		layer.canvasE.SetOnMouseLeave(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
+			if !layer.hasValidXAxisRange() {
+				return
+			}
 			xy := getMouseXY(event)
 			oldselts = layer.chart.selectedTimeSlice
 			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnMouseLeave != nil {
+					if !drawing.hasNonEmptySeries() {
+						continue
+					}
 					drawing.OnMouseLeave(xy, event)
 				}
 			}
@@ -171,10 +206,16 @@ func (layer *Layer) SetEventDispatcher() {
 
 	if (hme & evt_Wheel) != 0 {
 		layer.canvasE.SetOnWheel(func(event *htmlevent.WheelEvent, currentTarget *html.HTMLElement) {
+			if !layer.hasValidXAxisRange() {
+				return
+			}
 			oldselts = layer.chart.selectedTimeSlice
 			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnWheel != nil {
+					if !drawing.hasNonEmptySeries() {
+						continue
+					}
 					drawing.OnWheel(event)
 				}
 			}
@@ -185,11 +226,17 @@ func (layer *Layer) SetEventDispatcher() {
 
 	if (hme & evt_Click) != 0 {
 		layer.canvasE.SetOnClick(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
+			if !layer.hasValidXAxisRange() {
+				return
+			}
 			xy := getMouseXY(event)
 			oldselts = layer.chart.selectedTimeSlice
 			oldseldata = layer.chart.selectedData
 			for _, drawing := range layer.drawings {
 				if drawing.OnClick != nil {
+					if !drawing.hasNonEmptySeries() {
+						continue
+					}
 					drawing.OnClick(xy, event)
 				}
 			}
@@ -253,8 +300,15 @@ func (layer *Layer) Clear() {
 // Clear the layer and redraw all drawings.
 func (layer *Layer) Redraw() {
 	layer.Clear()
+	if !layer.hasValidXAxisRange() {
+		return
+	}
 	for _, drawing := range layer.drawings {
 		if drawing.OnRedraw != nil {
+			if !drawing.hasNonEmptySeries() {
+				Debug(DBG_REDRAW, "%q Redraw fails: missing data", drawing.Name)
+				continue
+			}
 			drawing.OnRedraw()
 		}
 	}
@@ -263,15 +317,22 @@ func (layer *Layer) Redraw() {
 // Redraw the layer if at least one drawings need to be redrawn.
 // Then update selection on the layer
 func (layer *Layer) RedrawOnlyNeeds() {
+	if !layer.hasValidXAxisRange() {
+		return
+	}
+	fredrawn := false
 	for _, drawing := range layer.drawings {
 		if drawing.NeedRedraw != nil {
+			if !drawing.hasNonEmptySeries() {
+				continue
+			}
 			need := drawing.NeedRedraw()
 
 			Debug(DBG_SELCHANGE|DBG_REDRAW, "%q/%q layer/drawing, RedrawOnlyNeeds NeedRedraw:%v", layer.Name, drawing.Name, need)
 
-			if need {
+			if need && !fredrawn {
 				layer.Redraw()
-				break
+				fredrawn = true
 			}
 		}
 	}
