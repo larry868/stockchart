@@ -11,7 +11,8 @@ import (
 
 type DrawingXGrid struct {
 	Drawing
-	fFullGrid bool // draw grids otherwise only labels
+	fFullGrid     bool // draw grids otherwise only labels
+	lastlocalZone bool
 }
 
 func NewDrawingXGrid(series *DataList, fFullGrid bool, timeSelDependant bool) *DrawingXGrid {
@@ -24,7 +25,7 @@ func NewDrawingXGrid(series *DataList, fFullGrid bool, timeSelDependant bool) *D
 		drawing.OnRedraw()
 	}
 	drawing.Drawing.NeedRedraw = func() bool {
-		return timeSelDependant
+		return timeSelDependant || drawing.chart.localZone != drawing.lastlocalZone
 	}
 	return drawing
 }
@@ -99,7 +100,13 @@ func (drawing DrawingXGrid) OnRedraw() {
 		// draw time label if not overlapping last label
 		if (xpos + 2) > lastlabelend {
 			strdtefmt := maskmain.GetTimeFormat(xtime, lastxtime)
-			label := xtime.Format(strdtefmt)
+			drawing.lastlocalZone = drawing.chart.localZone
+			var label string
+			if drawing.chart.localZone {
+				label = xtime.Local().Format(strdtefmt)
+			} else {
+				label = xtime.UTC().Format(strdtefmt)
+			}
 			drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gLabelColor.Hexa())})
 			drawing.Ctx2D.FillText(label, float64(xpos+2), float64(drawing.drawArea.End().Y)-1, nil)
 			lastlabelend = xpos + 2 + int(drawing.Ctx2D.MeasureText(label).Width())

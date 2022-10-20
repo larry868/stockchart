@@ -32,6 +32,7 @@ type StockChart struct {
 	timeRange         timeline.TimeSlice // the overall time range to display
 	selectedTimeSlice timeline.TimeSlice // the current time slice selected, IsZero if none
 	selectedData      *DataStock         // the current data selected, nil if none
+	localZone         bool               // Show local zone time, otherwise show UTC time
 
 	NotifySelChangeTimeSlice func(strpair string, ts timeline.TimeSlice) // function called everytime the timeselection change, if not nil
 	NotifySelChangeData      func(strpair string, data *DataStock)
@@ -111,7 +112,7 @@ func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendrate 
 
 	selNeedUpdate := pchart.selectedTimeSlice.IsZero() || pchart.selectedTimeSlice.From.Before(pchart.timeRange.From) || pchart.selectedTimeSlice.To.After(pchart.timeRange.To)
 	if selNeedUpdate {
-		pchart.DoSelChangeTimeSlice(pchart.MainSeries.Name, pchart.timeRange, false)
+		pchart.DoChangeSelTimeSlice(pchart.MainSeries.Name, pchart.timeRange, false)
 	}
 	return pchart.timeRange
 }
@@ -352,13 +353,13 @@ func (pchart *StockChart) RedrawOnlyNeeds() {
 	pchart.isDrawing = false
 }
 
-// DoSelChangeTimeSlice updates all drawings to reflect the new timsel.
+// DoChangeSelTimeSlice updates all drawings to reflect the new timsel.
 //
 // It's called by the time selector in the navbar when user navigates,
 // but can be called directly outside of the chart.
 //
 // call OnDoChangeTimeSelection if setup
-func (pchart *StockChart) DoSelChangeTimeSlice(strpair string, newts timeline.TimeSlice, fNotify bool) {
+func (pchart *StockChart) DoChangeSelTimeSlice(strpair string, newts timeline.TimeSlice, fNotify bool) {
 
 	if newts.IsZero() {
 		newts = pchart.timeRange
@@ -367,7 +368,7 @@ func (pchart *StockChart) DoSelChangeTimeSlice(strpair string, newts timeline.Ti
 	}
 	pchart.selectedTimeSlice = newts
 
-	Debug(DBG_SELCHANGE, "DoSelChangeTimeSlice: %s", newts.String())
+	Debug(DBG_SELCHANGE, "DoChangeSelTimeSlice: %s", newts.String())
 
 	pchart.RedrawOnlyNeeds()
 
@@ -376,16 +377,24 @@ func (pchart *StockChart) DoSelChangeTimeSlice(strpair string, newts timeline.Ti
 	}
 }
 
-func (pchart *StockChart) DoSelChangeData(strpair string, newdata *DataStock, fNotify bool) {
+func (pchart *StockChart) DoChangeSelData(strpair string, newdata *DataStock, fNotify bool) {
 	pchart.selectedData = newdata
 
-	Debug(DBG_SELCHANGE, "DoSelChangeData: %p %s", newdata, newdata.String())
+	Debug(DBG_SELCHANGE, "DoChangeSelData: %p %s", newdata, newdata.String())
 
 	pchart.RedrawOnlyNeeds()
 
 	if pchart.NotifySelChangeData != nil && fNotify {
 		pchart.NotifySelChangeData(strpair, pchart.selectedData)
 	}
+}
+
+func (pchart *StockChart) DoChangeTimeZone(localZone bool) {
+	pchart.localZone = localZone
+
+	Debug(DBG_SELCHANGE, "DoChangeTimeZone: localzone:%v", localZone)
+
+	pchart.RedrawOnlyNeeds()
 }
 
 /*
