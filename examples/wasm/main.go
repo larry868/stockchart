@@ -25,14 +25,14 @@ func main() {
 	// build  random dataset for the demo
 	datastart := time.Date(2022, 7, 1, 0, 0, 0, 0, time.UTC)
 	dataset := BuildRandomDataset("BTX/USD x1m", 500, datastart, time.Minute)
-	
+
 	// Create a new chart
 	chart, err := stockchart.NewStockChart("mychart", rgb.Gray.Lighten(0.8), *dataset, 0.1)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	
+
 	subdataset1 := BuildRandomDataset("BTX/USD x30m", 5, datastart, time.Minute*30)
 	chart.AddSubChart(4, &stockchart.NewDrawingCandles(subdataset1, 0.1, false).Drawing)
 
@@ -48,11 +48,11 @@ func main() {
 	btnseldata.SetOnClick(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 		if !fsel {
 			fsel = true
-			chart.DoSelChangeData("", dataset.GetDataAt(datastart.Add(29*time.Minute)), false)
+			chart.DoChangeSelData("", dataset.GetDataAt(datastart.Add(29*time.Minute)), false)
 			btnseldata.SetInnerText("Unselect candle")
 		} else {
 			fsel = false
-			chart.DoSelChangeData("", nil, false)
+			chart.DoChangeSelData("", nil, false)
 			btnseldata.SetInnerText("Select a candle")
 		}
 	})
@@ -63,11 +63,11 @@ func main() {
 	btnselzoom.SetOnClick(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 		if !fzoom {
 			fzoom = true
-			chart.DoSelChangeTimeSlice("", timeline.MakeTimeSlice(datastart.Add(2*time.Hour), 1*time.Hour), false)
+			chart.DoChangeSelTimeSlice("", timeline.MakeTimeSlice(datastart.Add(2*time.Hour), 1*time.Hour), false)
 			btnselzoom.SetInnerText("Unzoom")
 		} else {
 			fzoom = false
-			chart.DoSelChangeTimeSlice("", timeline.TimeSlice{}, false)
+			chart.DoChangeSelTimeSlice("", timeline.TimeSlice{}, false)
 			btnselzoom.SetInnerText("Zoom to a specific hour")
 		}
 	})
