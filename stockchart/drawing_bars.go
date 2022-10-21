@@ -7,7 +7,6 @@ import (
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/rgb/v2"
 	"github.com/sunraylab/timeline/v2"
-	"github.com/sunraylab/verbose"
 )
 
 // Drawing a series of bars like for volumes
@@ -47,7 +46,7 @@ func (drawing DrawingBars) onRedraw() {
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	verbose.Debug("%q OnRedraw drawarea:%s, xAxisRange:%v, yrange:%v, xfactor:%f yfactor:%f", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange.String(), xfactor, yfactor)
+	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, yrange:%v, xfactor:%f yfactor:%f", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), yrange.String(), xfactor, yfactor)
 
 	// scan all points
 	var rbar *Rect
