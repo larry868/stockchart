@@ -11,9 +11,9 @@ import (
 
 type DrawingXGrid struct {
 	Drawing
-	fFullGrid     bool // draw grids otherwise only labels
-	
-	lastlocalZone bool
+	fFullGrid bool // draw grids otherwise only labels
+
+	lastlocalZone         bool
 	lastSelectedTimeslice timeline.TimeSlice
 }
 
@@ -31,7 +31,7 @@ func NewDrawingXGrid(series *DataList, fFullGrid bool, timeSelDependant bool) *D
 	}
 
 	drawing.Drawing.NeedRedraw = func() bool {
-		return timeSelDependant && (drawing.lastSelectedTimeslice.Compare(drawing.chart.selectedTimeSlice)!=timeline.EQUAL) || (drawing.chart.localZone != drawing.lastlocalZone)
+		return timeSelDependant && (drawing.lastSelectedTimeslice.Compare(drawing.chart.selectedTimeSlice) != timeline.EQUAL) || (drawing.chart.localZone != drawing.lastlocalZone)
 	}
 	return drawing
 }
@@ -77,6 +77,12 @@ func (drawing DrawingXGrid) onRedraw() {
 		var xtime time.Time
 		for drawing.xAxisRange.Scan(&xtime, maskmain-1, true); !xtime.IsZero(); drawing.xAxisRange.Scan(&xtime, maskmain-1, false) {
 
+			if drawing.chart.localZone {
+				xtime = xtime.Local()
+			} else {
+				xtime = xtime.UTC()
+			}
+
 			// calculate xpos. if the timeslice is a single date then draw a single bar at the middle
 			xtimerate := drawing.xAxisRange.Progress(xtime)
 			xpos := drawing.drawArea.O.X + int(float64(drawing.drawArea.Width)*xtimerate)
@@ -91,7 +97,14 @@ func (drawing DrawingXGrid) onRedraw() {
 	var xtime, lastxtime time.Time
 	for drawing.xAxisRange.Scan(&xtime, maskmain, true); !xtime.IsZero(); drawing.xAxisRange.Scan(&xtime, maskmain, false) {
 
-		// calculate xpos. if the timeslice is a single date then draw a single bar at the middle
+		if drawing.chart.localZone {
+			xtime = xtime.Local()
+		} else {
+			xtime = xtime.UTC()
+		}
+
+		// calculate xpos.
+		// if the timeslice is a single date then draw a single bar at the middle
 		xtimerate := drawing.xAxisRange.Progress(xtime)
 		xpos := drawing.drawArea.O.X + int(float64(drawing.drawArea.Width)*xtimerate)
 
@@ -102,12 +115,7 @@ func (drawing DrawingXGrid) onRedraw() {
 		// draw time label if not overlapping last label
 		if (xpos + 2) > lastlabelend {
 			strdtefmt := maskmain.GetTimeFormat(xtime, lastxtime)
-			var label string
-			if drawing.chart.localZone {
-				label = xtime.Local().Format(strdtefmt)
-			} else {
-				label = xtime.UTC().Format(strdtefmt)
-			}
+			label := xtime.Format(strdtefmt)
 			drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(gLabelColor.Hexa())})
 			drawing.Ctx2D.FillText(label, float64(xpos+2), float64(drawing.drawArea.End().Y)-1, nil)
 			lastlabelend = xpos + 2 + int(drawing.Ctx2D.MeasureText(label).Width())
