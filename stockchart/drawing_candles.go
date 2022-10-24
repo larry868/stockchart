@@ -79,9 +79,11 @@ func (drawing DrawingCandles) onRedraw() {
 			continue
 		}
 
-		// do not draw items after xAxisRange boundary
-		if item.TimeSlice.From.After(drawing.xAxisRange.To) {
-			break
+		// skip items after xAxisRange boundary.
+		// Do not break because series are not always sorted chronologicaly
+		if item.From.After(drawing.xAxisRange.To) {
+			item = item.Next
+			continue
 		}
 
 		// choose the color
@@ -169,10 +171,9 @@ func (drawing DrawingCandles) onRedraw() {
 			}
 
 		}
-		// scan next item
-		//last = item
-		item = item.Next
 
+		// scan next item
+		item = item.Next
 	}
 
 	// draw the label of the series
