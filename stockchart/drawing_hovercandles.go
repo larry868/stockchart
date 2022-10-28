@@ -63,6 +63,11 @@ func (drawing *DrawingHoverCandles) onMouseMove(xy Point, event *htmlevent.Mouse
 
 	// draw the date in the footer
 	strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(middletime, time.Time{})
+	if drawing.chart.localZone {
+		middletime = middletime.Local()
+	} else {
+		middletime = middletime.UTC()
+	}
 	strtime := middletime.Format(strdtefmt)
 	drawing.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
 	drawing.DrawTextBox(strtime, Point{X: xpos, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignCenter|AlignBottom, rgb.White, drawing.MainColor, 5, 1, 1)

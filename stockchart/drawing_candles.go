@@ -96,8 +96,11 @@ func (drawing DrawingCandles) onRedraw() {
 		drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(candleColor.Opacify(drawing.alphaFactor).Hexa())})
 		drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(candleColor.Opacify(0.5).Hexa())})
 
-		// calculate padding between candles
-		xpadding := imax(0, int(math.Ceil(xfactor*float64(drawing.chart.MainSeries.Precision)*0.1)))
+		// calculate padding between candles only if not dashstyle and not alpha style
+		xpadding := 0
+		if drawing.alphaFactor >= 1 && !drawing.dashstyle {
+			xpadding = imax(0, int(math.Ceil(xfactor*float64(drawing.chart.MainSeries.Precision)*0.1)))
+		}
 
 		// build the OC candle rect, inside the drawing areaa
 		rcandle = new(Rect)
@@ -126,7 +129,6 @@ func (drawing DrawingCandles) onRedraw() {
 			rwick := new(Rect)
 			if drawing.alphaFactor >= 1 {
 				rwick.Width = imax(xpadding, 1)
-				//			xtimerate := drawing.xAxisRange.Progress(item.TimeSlice.Middle())
 				rwick.O.X = int(math.Round(drawing.xTime(item.Middle()) - float64(rwick.Width)/2.0))
 			} else {
 				rwick.Width = rcandle.Width
@@ -139,17 +141,21 @@ func (drawing DrawingCandles) onRedraw() {
 			rwick.FlipPositive()
 
 			if !drawing.dashstyle {
+				// not dash style
 				// draw OC
 				drawing.Ctx2D.FillRect(float64(rcandle.O.X), float64(rcandle.O.Y), float64(rcandle.Width), float64(rcandle.Height))
+
 				// draw LH only if inside the drawing area
 				if rwick = drawing.drawArea.And(*rwick); rwick != nil {
 					drawing.Ctx2D.FillRect(float64(rwick.O.X), float64(rwick.O.Y), float64(rwick.Width), float64(rwick.Height))
 				}
 
 			} else {
+				// dash style
 				// draw OC
 				drawing.Ctx2D.SetLineDash([]float64{3.0, 3.0})
 				drawing.Ctx2D.StrokeRect(float64(rcandle.O.X)+0.5, float64(rcandle.O.Y)-0.5, float64(rcandle.Width), float64(rcandle.Height))
+
 				// draw LH only if inside the drawing area
 				if rwick = drawing.drawArea.And(*rwick); rwick != nil {
 					drawing.Ctx2D.SetLineDash([]float64{7.0, 7.0})
