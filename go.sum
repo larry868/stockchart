@@ -4,7 +4,7 @@ github.com/sunraylab/datarange v1.1.1 h1:GscFQMSkcudRGFY1k+LXTAFUm9EQeZ8xTVbgeA5
 github.com/sunraylab/datarange v1.1.1/go.mod h1:aol7ppxrCU9RWrx/vnA3VXGBHDAnAvWY+osq7xKOu8g=
 github.com/sunraylab/rgb/v2 v2.0.2 h1:3NuQuA4oQHvzoZJ0b2Pu3/VJSrJvKETG2Kqcs0+MA70=
 github.com/sunraylab/rgb/v2 v2.0.2/go.mod h1:OuV0mZOJ9XJqP7LOKZAl7NXNde59IOLFssOhvFlTQPM=
-github.com/sunraylab/timeline/v2 v2.4.5 h1:2/v+aY52kTIvhCHD9r2FTcf+1IQdEVogWHPcjve/6uw=
-github.com/sunraylab/timeline/v2 v2.4.5/go.mod h1:+NNSjWTWaJiLIxJcgqcdm2+0bgn7btzxnZJBVWp4BYo=
+github.com/sunraylab/timeline/v2 v2.4.7 h1:nV48mJkpmiow6SSMNQxEpc/4ecYZ1kr3jVCGZlJWQJg=
+github.com/sunraylab/timeline/v2 v2.4.7/go.mod h1:+NNSjWTWaJiLIxJcgqcdm2+0bgn7btzxnZJBVWp4BYo=
 github.com/sunraylab/verbose v1.2.4 h1:+SAcM6GONNqYweYWA1zJHCw1XkQBCGqN7TCU6D9YKLY=
 github.com/sunraylab/verbose v1.2.4/go.mod h1:j6ioDGFaZJdXnqaoDO44rbxsFWQvbg/GvqIROFx7Vyc=
