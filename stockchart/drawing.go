@@ -62,11 +62,13 @@ const (
 
 // SetMainSeries set or reset the MainSeries of the chart and its drawings. Reset the timerange.
 // Need to redraw
-func (drawing *Drawing) ResetSeries(series *DataList) {
+func (drawing *Drawing) ResetSubSeries(series *DataList, redrawNow bool) {
 	// change the content
 	drawing.series = series
 
-	// drawing.Layer.Redraw()
+	if redrawNow {
+		drawing.Redraw()
+	}
 }
 
 // DrawTextBox draw a text within a box.
