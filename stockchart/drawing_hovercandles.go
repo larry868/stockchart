@@ -75,6 +75,12 @@ func (drawing *DrawingHoverCandles) onMouseMove(xy Point, event *htmlevent.Mouse
 
 // select a candle
 func (drawing *DrawingHoverCandles) onClick(xy Point, event *htmlevent.MouseEvent) {
+
+	if event.ShiftKey() {
+		drawing.chart.selectedData = nil
+		return 
+	}
+
 	// get the candle
 	trate := drawing.drawArea.XRate(xy.X)
 	postime := drawing.xAxisRange.WhatTime(trate)
