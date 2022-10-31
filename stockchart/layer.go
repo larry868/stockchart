@@ -89,10 +89,10 @@ func (layer *Layer) SetEventDispatcher() {
 	var oldseldata *DataStock
 	processSelChange := func() {
 		if oldselts.Compare(layer.chart.selectedTimeSlice) == timeline.DIFFERENT {
-			layer.chart.DoChangeSelTimeSlice(layer.chart.MainSeries.Name, layer.chart.selectedTimeSlice, true)
+			layer.chart.DoChangeSelTimeSlice(layer.chart.selectedTimeSlice, true)
 		}
 		if oldseldata != layer.chart.selectedData {
-			layer.chart.DoChangeSelData(layer.chart.MainSeries.Name, layer.chart.selectedData, true)
+			layer.chart.DoChangeSelData(layer.chart.selectedData, true)
 		}
 	}
 

@@ -48,11 +48,11 @@ func main() {
 	btnseldata.SetOnClick(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 		if !fsel {
 			fsel = true
-			chart.DoChangeSelData("", dataset.GetDataAt(datastart.Add(29*time.Minute)), false)
+			chart.DoChangeSelData(dataset.GetDataAt(datastart.Add(29*time.Minute)), false)
 			btnseldata.SetInnerText("Unselect candle")
 		} else {
 			fsel = false
-			chart.DoChangeSelData("", nil, false)
+			chart.DoChangeSelData(nil, false)
 			btnseldata.SetInnerText("Select a candle")
 		}
 	})
@@ -63,11 +63,11 @@ func main() {
 	btnselzoom.SetOnClick(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
 		if !fzoom {
 			fzoom = true
-			chart.DoChangeSelTimeSlice("", timeline.MakeTimeSlice(datastart.Add(2*time.Hour), 1*time.Hour), false)
+			chart.DoChangeSelTimeSlice(timeline.MakeTimeSlice(datastart.Add(2*time.Hour), 1*time.Hour), false)
 			btnselzoom.SetInnerText("Unzoom")
 		} else {
 			fzoom = false
-			chart.DoChangeSelTimeSlice("", timeline.TimeSlice{}, false)
+			chart.DoChangeSelTimeSlice(timeline.TimeSlice{}, false)
 			btnselzoom.SetInnerText("Zoom to a specific hour")
 		}
 	})

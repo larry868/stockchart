@@ -36,8 +36,8 @@ type StockChart struct {
 	localZone         bool                // Show local zone time, otherwise show UTC time
 	yAxisRange        datarange.DataRange // the yAxisRange calculated by the YGrid, can be used by any drawing on the chart layer and above
 
-	NotifySelChangeTimeSlice func(strpair string, ts timeline.TimeSlice) // function called everytime the timeselection change, if not nil
-	NotifySelChangeData      func(strpair string, data *DataStock)
+	NotifySelChangeTimeSlice func(ts timeline.TimeSlice) // function called everytime the timeselection change, if not nil
+	NotifySelChangeData      func(data *DataStock)
 }
 
 // String interface for StockChart, mainly for debugging purpose
@@ -57,7 +57,7 @@ func (chart StockChart) String() string {
 }
 
 // SetMainSeries set or reset the MainSeries of the chart and its drawings. Reset the timerange
-func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64, redrawNow bool) {
+func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64, redrawNow bool) (timeRange timeline.TimeSlice, selectef timeline.TimeSlice) {
 
 	// clear subchart series
 	for _, player := range pchart.layers {
@@ -76,12 +76,13 @@ func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64, r
 	pchart.MainSeries = series
 
 	// reset time range
-	pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), extendrate)
+	tr, sel := pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), extendrate)
 
 	// Redraw, without subcharts
 	if redrawNow {
-		pchart.Redraw()
+		pchart.Resize()
 	}
+	return tr, sel
 }
 
 // AddSubChart add another drawing to draw within the same X and Y ranges than the main series on the choosen layer.
@@ -100,8 +101,8 @@ func (pchart *StockChart) AddSubChart(layerid int, dr *Drawing) {
 //	extendCoef == 0.1 for 10% extention in duration
 //
 // Update timeselection if required. If the timeselection change the RedrawOnlyNeeds
-// Returns the setup timerange
-func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendrate float64) timeline.TimeSlice {
+// Returns the setup timerange and the selectedTimeslice
+func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendrate float64) (timeRange timeline.TimeSlice, selected timeline.TimeSlice) {
 
 	Debug(DBG_SELCHANGE, "SetTimeRange %s", timerange)
 
@@ -114,9 +115,9 @@ func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendrate 
 
 	selNeedUpdate := pchart.selectedTimeSlice.IsZero() || pchart.selectedTimeSlice.From.Before(pchart.timeRange.From) || pchart.selectedTimeSlice.To.After(pchart.timeRange.To)
 	if selNeedUpdate {
-		pchart.DoChangeSelTimeSlice(pchart.MainSeries.Name, pchart.timeRange, false)
+		pchart.DoChangeSelTimeSlice(pchart.timeRange, false)
 	}
-	return pchart.timeRange
+	return pchart.timeRange, pchart.selectedTimeSlice
 }
 
 // NewStockChart initialize a stockchart within the <stockchart> HTML element idenfied by chartid.
@@ -361,7 +362,7 @@ func (pchart *StockChart) RedrawOnlyNeeds() {
 // but can be called directly outside of the chart.
 //
 // call OnDoChangeTimeSelection if setup
-func (pchart *StockChart) DoChangeSelTimeSlice(strpair string, newts timeline.TimeSlice, fNotify bool) {
+func (pchart *StockChart) DoChangeSelTimeSlice(newts timeline.TimeSlice, fNotify bool) {
 
 	if newts.IsZero() {
 		newts = pchart.timeRange
@@ -370,24 +371,24 @@ func (pchart *StockChart) DoChangeSelTimeSlice(strpair string, newts timeline.Ti
 	}
 	pchart.selectedTimeSlice = newts
 
-	Debug(DBG_SELCHANGE, "DoChangeSelTimeSlice: %s", newts.String())
+	Debug(DBG_SELCHANGE, "StockChart DoChangeSelTimeSlice: %s, fNotify:%v", newts.String(), fNotify)
 
 	pchart.RedrawOnlyNeeds()
 
 	if pchart.NotifySelChangeTimeSlice != nil && fNotify {
-		pchart.NotifySelChangeTimeSlice(strpair, newts)
+		pchart.NotifySelChangeTimeSlice(newts)
 	}
 }
 
-func (pchart *StockChart) DoChangeSelData(strpair string, newdata *DataStock, fNotify bool) {
+func (pchart *StockChart) DoChangeSelData(newdata *DataStock, fNotify bool) {
 	pchart.selectedData = newdata
 
-	Debug(DBG_SELCHANGE, "DoChangeSelData: %p %s", newdata, newdata.String())
+	Debug(DBG_SELCHANGE, "StockChart DoChangeSelData: %p %s", newdata, newdata.String())
 
 	pchart.RedrawOnlyNeeds()
 
 	if pchart.NotifySelChangeData != nil && fNotify {
-		pchart.NotifySelChangeData(strpair, pchart.selectedData)
+		pchart.NotifySelChangeData(pchart.selectedData)
 	}
 }
 
