@@ -34,10 +34,10 @@ func main() {
 	}
 
 	subdataset1 := BuildRandomDataset("BTX/USD x30m", 5, datastart, time.Minute*30)
-	chart.AddSubChart(4, &stockchart.NewDrawingCandles(subdataset1, 0.1, false).Drawing)
+	chart.AddSubChart(4, &stockchart.NewDrawingCandles(subdataset1, stockchart.DS_Area).Drawing)
 
 	subdataset2 := BuildRandomDataset("BTX/USD x100m", 5, datastart, time.Minute*100)
-	chart.AddSubChart(4, &stockchart.NewDrawingCandles(subdataset2, 0.1, true).Drawing)
+	chart.AddSubChart(4, &stockchart.NewDrawingCandles(subdataset2, stockchart.DS_Frame).Drawing)
 
 	// size it the first time to force a full redraw
 	chart.Resize()

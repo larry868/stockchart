@@ -77,7 +77,7 @@ func (drawing *Drawing) ResetSubSeries(series *DataList, redrawNow bool) {
 // by align, the border, the margin and the padding.
 //
 // Font must be set before
-func (drawing *Drawing) DrawTextBox(txt string, xy Point, align Align, backgroundcolor rgb.Color, textcolor rgb.Color, margin int, border int, padding int) {
+func (drawing *Drawing) DrawTextBox(txt string, xy Point, align Align, backgroundcolor rgb.Color, textcolor rgb.Color, margin int, border int, padding int) Rect {
 
 	var postxt Point
 
@@ -149,6 +149,8 @@ func (drawing *Drawing) DrawTextBox(txt string, xy Point, align Align, backgroun
 	// draw the text
 	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(textcolor.Hexa())})
 	drawing.Ctx2D.FillText(txt, float64(postxt.X), float64(postxt.Y), nil)
+
+	return bgbox
 }
 
 // return the x position of a specific time withing the drawing area and accoring to the xAxisRange
@@ -174,11 +176,11 @@ func (drawing *Drawing) DrawVLine(at time.Time, color rgb.Color, full bool) (xpo
 
 		drawing.Ctx2D.BeginPath()
 		if full {
-			drawing.Ctx2D.MoveTo(float64(xpos)+0.5, float64(drawing.ClipArea.O.Y))
-			drawing.Ctx2D.LineTo(float64(xpos)+0.5, float64(drawing.ClipArea.O.Y+drawing.ClipArea.Height))
+			drawing.Ctx2D.MoveTo(float64(xpos)-0.5, float64(drawing.ClipArea.O.Y))
+			drawing.Ctx2D.LineTo(float64(xpos)-0.5, float64(drawing.ClipArea.O.Y+drawing.ClipArea.Height))
 		} else {
-			drawing.Ctx2D.MoveTo(float64(xpos)+0.5, float64(drawing.drawArea.O.Y))
-			drawing.Ctx2D.LineTo(float64(xpos)+0.5, float64(drawing.drawArea.O.Y+drawing.drawArea.Height))
+			drawing.Ctx2D.MoveTo(float64(xpos)-0.5, float64(drawing.drawArea.O.Y))
+			drawing.Ctx2D.LineTo(float64(xpos)-0.5, float64(drawing.drawArea.O.Y+drawing.drawArea.Height))
 		}
 		drawing.Ctx2D.Stroke()
 	} else {

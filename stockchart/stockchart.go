@@ -199,7 +199,7 @@ func NewStockChart(chartid string, bgcolor rgb.Color, series DataList, extendrat
 		}
 
 		// The candles
-		dr = layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries, 1, false).Drawing, rgb.White, true)
+		dr = layer.AddDrawing(&NewDrawingCandles(&chart.MainSeries, DS_Stick).Drawing, rgb.White, true)
 		dr.DrawArea = getMainDrawArea
 
 		chart.layers[4] = layer

@@ -3,8 +3,8 @@ package stockchart
 import (
 	"time"
 
-	"github.com/gowebapi/webapi/core/js"
-	"github.com/gowebapi/webapi/html/canvas"
+	// "github.com/gowebapi/webapi/core/js"
+	// "github.com/gowebapi/webapi/html/canvas"
 	"github.com/gowebapi/webapi/html/htmlevent"
 	"github.com/sunraylab/rgb/v2"
 	"github.com/sunraylab/timeline/v2"
@@ -56,10 +56,11 @@ func (drawing *DrawingHoverCandles) onMouseMove(xy Point, event *htmlevent.Mouse
 
 	// draw a line at the middle of the selected candle
 	middletime := hoverData.TimeSlice.Middle()
-	xtimerate := drawing.xAxisRange.Progress(middletime)
-	xpos := drawing.drawArea.O.X + int(float64(drawing.drawArea.Width)*xtimerate)
-	drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
-	drawing.Ctx2D.FillRect(float64(xpos), float64(drawing.drawArea.O.Y), 1, float64(drawing.drawArea.Height))
+	// xtimerate := drawing.xAxisRange.Progress(middletime)
+	// xpos := drawing.drawArea.O.X + int(float64(drawing.drawArea.Width)*xtimerate)
+	// drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(drawing.MainColor.Hexa())})
+	// drawing.Ctx2D.FillRect(float64(xpos), float64(drawing.drawArea.O.Y), 1, float64(drawing.drawArea.Height))
+	drawing.DrawVLine(middletime, drawing.MainColor, true)
 
 	// draw the date in the footer
 	strdtefmt := timeline.MASK_SHORTEST.GetTimeFormat(middletime, time.Time{})
@@ -68,6 +69,8 @@ func (drawing *DrawingHoverCandles) onMouseMove(xy Point, event *htmlevent.Mouse
 	} else {
 		middletime = middletime.UTC()
 	}
+	xtimerate := drawing.xAxisRange.Progress(middletime)
+	xpos := drawing.drawArea.O.X + int(float64(drawing.drawArea.Width)*xtimerate)
 	strtime := middletime.Format(strdtefmt)
 	drawing.Ctx2D.SetFont(`12px 'Roboto', sans-serif`)
 	drawing.DrawTextBox(strtime, Point{X: xpos, Y: drawing.drawArea.O.Y + drawing.drawArea.Height}, AlignCenter|AlignBottom, rgb.White, drawing.MainColor, 5, 1, 1)

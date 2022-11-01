@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sunraylab/datarange"
+	"github.com/sunraylab/rgb/v2"
 	"github.com/sunraylab/timeline/v2"
 )
 
@@ -14,14 +15,30 @@ import (
 type DataStock struct {
 	timeline.TimeSlice `json:"timeslice"`
 
-	Open   float64 `json:"open"`
-	Low    float64 `json:"low"`
-	High   float64 `json:"high"`
-	Close  float64 `json:"close"`
-	Volume float64 `json:"volule"`
+	Open        float64 `json:"open"`
+	Low         float64 `json:"low"`
+	High        float64 `json:"high"`
+	Close       float64 `json:"close"`
+	Volume      float64 `json:"volume"`
+	HasPatterns int     `json:"-"`
 
 	Next *DataStock `json:"-"` // going to the head
 	Prev *DataStock `json:"-"` // going to the tail
+}
+
+func (ds DataStock) CandleColor() (candleColor rgb.Color) {
+	const (
+		greenCandle   = rgb.Color(0x7dce13ff)
+		redCandle     = rgb.Color(0xb20016ff)
+		neutralCandle = rgb.Gray
+	)
+	candleColor = neutralCandle
+	if ds.Close > ds.Open {
+		candleColor = greenCandle
+	} else if ds.Close < ds.Open {
+		candleColor = redCandle
+	}
+	return candleColor
 }
 
 func (dp *DataStock) String() string {

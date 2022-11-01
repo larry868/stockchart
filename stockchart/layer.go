@@ -37,6 +37,8 @@ type Layer struct {
 
 	xAxisRange *timeline.TimeSlice // the timeslice to show and draw on this layer
 
+	TitleAreas []Rect // the area to stack titles of series in the layer
+
 	drawings []*Drawing // stack of drawings
 }
 
@@ -295,6 +297,7 @@ func (layer *Layer) Resize(newarea Rect) {
 // Clear the layer
 func (layer *Layer) Clear() {
 	layer.Ctx2D.ClearRect(float64(layer.ClipArea.O.X), float64(layer.ClipArea.O.Y), float64(layer.ClipArea.Width), float64(layer.ClipArea.Height))
+	layer.TitleAreas = make([]Rect, 0)
 }
 
 // Clear the layer and redraw all drawings.
