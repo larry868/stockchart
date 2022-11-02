@@ -6,6 +6,7 @@ import (
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/sunraylab/rgb/v2"
+	bootstrapcolor "github.com/sunraylab/rgb/v2/bootstrapcolor.go"
 	"github.com/sunraylab/timeline/v2"
 )
 
@@ -72,8 +73,10 @@ func (drawing *DrawingCandles) onRedraw() {
 		drawing.DrawVLine(middletime, drawing.MainColor, true)
 	}
 
-	var wcf64, hcf64, xposcf64, yposcf64 float64
-	var wwickf64, hwickf64, xposwickf64, yposwickf64 float64
+	var wcf64, hcf64, xcf64, ycf64 float64
+	var wwickf64, hwickf64, xwickf64, ywickf64 float64
+	var wpatf64, hpatf64, xpatf64, ypatf64 float64
+	const ypat = 10.0
 
 	// scan all points forward !
 	drbottomf64 := float64(drawing.drawArea.O.Y + drawing.drawArea.Height)
@@ -92,6 +95,7 @@ func (drawing *DrawingCandles) onRedraw() {
 
 		// choose the color
 		candleColor := item.CandleColor()
+		patternColor := bootstrapcolor.Purple
 
 		// force bar style if width is too small
 		style := drawing.DrawStyle
@@ -106,15 +110,27 @@ func (drawing *DrawingCandles) onRedraw() {
 			drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(candleColor.Hexa())})
 
 			// width & xpos
-			xposcf64 = drawing.xTime(item.TimeSlice.Middle())
+			wcf64 = 1
+			xcf64 = drawing.xTime(item.TimeSlice.Middle())
 
 			// height & ypos
 			hcf64 = yfactor * (item.High - item.Low)
-			yposcf64 = drbottomf64 - yfactor*(item.High-yrange.Low())
+			ycf64 = drbottomf64 - yfactor*(item.High-yrange.Low())
 			hcf64 = fmax(hcf64, 1.0)
 
 			// draw now
-			drawing.Ctx2D.FillRect(float64(int(xposcf64)), float64(int(yposcf64)), float64(int(wcf64)), float64(int(hcf64)))
+			drawing.Ctx2D.FillRect(float64(int(xcf64)), float64(int(ycf64)), float64(int(wcf64)), float64(int(hcf64)))
+
+			// pattern
+			if item.HasPatterns > 0 {
+				wpatf64 = fmin(wcf64, 5.0)
+				hpatf64 = wpatf64
+				xpatf64 = xcf64
+				ypatf64 = drbottomf64 - ypat + 2
+				drawing.Ctx2D.SetLineWidth(1)
+				drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(patternColor.Hexa())})
+				drawing.Ctx2D.StrokeRect(float64(int(xpatf64))+0.5, float64(int(ypatf64))-0.5, float64(int(wpatf64)), float64(int(hpatf64)))
+			}
 
 		case DS_Stick:
 			// colorfull
@@ -124,27 +140,38 @@ func (drawing *DrawingCandles) onRedraw() {
 			// width, padding & xpos
 			xpaddingf64 := fmax(0.5, wcf64/15)
 			wcf64 -= 2 * xpaddingf64
-			xposcf64 = drawing.xTime(item.From) + xpaddingf64
+			xcf64 = drawing.xTime(item.From) + xpaddingf64
 
 			// height & ypos
 			hcf64 = yfactor * (item.Close - item.Open)
-			yposcf64 = drbottomf64 - yfactor*(item.Close-yrange.Low())
+			ycf64 = drbottomf64 - yfactor*(item.Close-yrange.Low())
 			if hcf64 < 0 {
 				hcf64 = -hcf64
-				yposcf64 = drbottomf64 - yfactor*(item.Open-yrange.Low())
+				ycf64 = drbottomf64 - yfactor*(item.Open-yrange.Low())
 			}
 			hcf64 = fmax(hcf64, 1.0)
 
-			// draw now
-			drawing.Ctx2D.FillRect(float64(int(xposcf64)), float64(int(yposcf64)), float64(int(wcf64)), float64(int(hcf64)))
+			// draw body
+			drawing.Ctx2D.FillRect(float64(int(xcf64)), float64(int(ycf64)), float64(int(wcf64)), float64(int(hcf64)))
 
 			// wick
 			wwickf64 = fmax(xpaddingf64, 1.0)
-			xposwickf64 = xposcf64 + (wcf64-wwickf64)/2.0
+			xwickf64 = xcf64 + (wcf64-wwickf64)/2.0
 
 			hwickf64 = fmax(yfactor*(item.High-item.Low), 1.0)
-			yposwickf64 = drbottomf64 - yfactor*(item.High-yrange.Low())
-			drawing.Ctx2D.FillRect(float64(int(xposwickf64)), float64(int(yposwickf64)), float64(int(wwickf64)), float64(int(hwickf64)))
+			ywickf64 = drbottomf64 - yfactor*(item.High-yrange.Low())
+			drawing.Ctx2D.FillRect(float64(int(xwickf64)), float64(int(ywickf64)), float64(int(wwickf64)), float64(int(hwickf64)))
+
+			// draw has patterns
+			if item.HasPatterns > 0 {
+				wpatf64 = fmin(wcf64, 5.0)
+				hpatf64 = wpatf64
+				xpatf64 = xcf64 + (wcf64-wpatf64)/2.0
+				ypatf64 = drbottomf64 - ypat - 5
+				drawing.Ctx2D.SetLineWidth(1)
+				drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(patternColor.Hexa())})
+				drawing.Ctx2D.StrokeRect(float64(int(xpatf64))+0.5, float64(int(ypatf64))-0.5, float64(int(wpatf64)), float64(int(hpatf64)))
+			}
 
 		case DS_Area:
 			// transparent
@@ -152,27 +179,37 @@ func (drawing *DrawingCandles) onRedraw() {
 			drawing.Ctx2D.SetFillStyle(&canvas.Union{Value: js.ValueOf(candleColor.Opacify(0.1).Hexa())})
 
 			// width & xpos
-			xposcf64 = drawing.xTime(item.From)
+			xcf64 = drawing.xTime(item.From)
 
 			// height & ypos
 			hcf64 = yfactor * (item.Close - item.Open)
-			yposcf64 = drbottomf64 - yfactor*(item.Close-yrange.Low())
+			ycf64 = drbottomf64 - yfactor*(item.Close-yrange.Low())
 			if hcf64 < 0 {
 				hcf64 = -hcf64
-				yposcf64 = drbottomf64 - yfactor*(item.Open-yrange.Low())
+				ycf64 = drbottomf64 - yfactor*(item.Open-yrange.Low())
 			}
 			hcf64 = fmax(hcf64, 1.0)
 
 			// draw now
-			drawing.Ctx2D.FillRect(float64(int(xposcf64))+0.5, float64(int(yposcf64))-0.5, float64(int(wcf64)), float64(int(hcf64)))
+			drawing.Ctx2D.FillRect(float64(int(xcf64))+0.5, float64(int(ycf64))-0.5, float64(int(wcf64)), float64(int(hcf64)))
 
 			// wick
 			wwickf64 = wcf64
-			xposwickf64 = math.Round(drawing.xTime(item.Middle()) - wwickf64/2.0)
+			xwickf64 = math.Round(drawing.xTime(item.Middle()) - wwickf64/2.0)
 
 			hwickf64 = yfactor * (item.High - item.Low)
-			yposwickf64 = drbottomf64 - yfactor*(item.High-yrange.Low())
-			drawing.Ctx2D.FillRect(float64(int(xposwickf64)), float64(int(yposwickf64)), float64(int(wwickf64)), float64(int(hwickf64)))
+			ywickf64 = drbottomf64 - yfactor*(item.High-yrange.Low())
+			drawing.Ctx2D.FillRect(float64(int(xwickf64)), float64(int(ywickf64)), float64(int(wwickf64)), float64(int(hwickf64)))
+
+			// draw has patterns
+			if item.HasPatterns > 0 {
+				wpatf64 = fmin(wcf64, 5.0)
+				hpatf64 = wpatf64
+				xpatf64 = xcf64 + (wcf64-wpatf64)/2.0
+				ypatf64 = drbottomf64 - ypat - 10
+				drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(patternColor.Hexa())})
+				drawing.Ctx2D.StrokeRect(float64(int(xpatf64))+0.5, float64(int(ypatf64))-0.5, float64(int(wpatf64)), float64(int(hpatf64)))
+			}
 
 		case DS_Frame:
 			// transparent dash
@@ -181,28 +218,37 @@ func (drawing *DrawingCandles) onRedraw() {
 			drawing.Ctx2D.SetLineWidth(1)
 
 			// width & xpos
-			xposcf64 = drawing.xTime(item.From)
+			xcf64 = drawing.xTime(item.From)
 
 			// height & ypos
 			hcf64 = yfactor * (item.Close - item.Open)
-			yposcf64 = drbottomf64 - yfactor*(item.Close-yrange.Low())
+			ycf64 = drbottomf64 - yfactor*(item.Close-yrange.Low())
 			if hcf64 < 0 {
 				hcf64 = -hcf64
-				yposcf64 = drbottomf64 - yfactor*(item.Open-yrange.Low())
+				ycf64 = drbottomf64 - yfactor*(item.Open-yrange.Low())
 			}
 			hcf64 = fmax(hcf64, 1.0)
 
 			// draw now
-			drawing.Ctx2D.StrokeRect(float64(int(xposcf64))+0.5, float64(int(yposcf64))-0.5, float64(int(wcf64)), float64(int(hcf64)))
+			drawing.Ctx2D.StrokeRect(float64(int(xcf64))+0.5, float64(int(ycf64))-0.5, float64(int(wcf64)), float64(int(hcf64)))
 
 			// wick
 			wwickf64 = wcf64
-			xposwickf64 = math.Round(drawing.xTime(item.Middle())) - wwickf64/2.0
+			xwickf64 = math.Round(drawing.xTime(item.Middle())) - wwickf64/2.0
 
 			hwickf64 = yfactor * (item.High - item.Low)
-			yposwickf64 = drbottomf64 - yfactor*(item.High-yrange.Low())
-			drawing.Ctx2D.StrokeRect(float64(int(xposwickf64))+0.5, float64(int(yposwickf64))-0.5, float64(int(wwickf64)), float64(int(hwickf64)))
+			ywickf64 = drbottomf64 - yfactor*(item.High-yrange.Low())
+			drawing.Ctx2D.StrokeRect(float64(int(xwickf64))+0.5, float64(int(ywickf64))-0.5, float64(int(wwickf64)), float64(int(hwickf64)))
 
+			// draw has patterns
+			if item.HasPatterns > 0 {
+				wpatf64 = fmin(wcf64, 5.0)
+				hpatf64 = wpatf64
+				xpatf64 = xcf64 + (wcf64-wpatf64)/2.0
+				ypatf64 = drbottomf64 - ypat - 15
+				drawing.Ctx2D.SetStrokeStyle(&canvas.Union{Value: js.ValueOf(patternColor.Hexa())})
+				drawing.Ctx2D.StrokeRect(float64(int(xpatf64))+0.5, float64(int(ypatf64))-0.5, float64(int(wpatf64)), float64(int(hpatf64)))
+			}
 		}
 
 		// scan next item
