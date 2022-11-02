@@ -367,6 +367,7 @@ func (pchart *StockChart) DoChangeSelTimeSlice(newts timeline.TimeSlice, fNotify
 	if newts.IsZero() {
 		newts = pchart.timeRange
 	} else {
+		newts.ForceDirection(timeline.Chronological)
 		pchart.timeRange.BoundIn(&newts)
 	}
 	pchart.selectedTimeSlice = newts
