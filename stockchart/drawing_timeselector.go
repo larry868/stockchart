@@ -231,7 +231,7 @@ func (drawing *DrawingTimeSelector) onWheel(event *htmlevent.WheelEvent) {
 	timeStep := drawing.dragtimeSelection.Duration().Adjust(0.2).Duration
 	Debug(DBG_EVENT, "%q OnWheel, shiftKey:%v, dy:%f, timeStep:%v", drawing.Name, event.ShiftKey(), dy, timeStep)
 
-	if event.ShiftKey() {
+	if !event.ShiftKey() {
 		// shift mode, shift to the future or to the past according to dir
 		drawing.dragtimeSelection.ShiftIn(timeStep*dir, *drawing.xAxisRange)
 	} else {
