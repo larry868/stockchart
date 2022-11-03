@@ -63,8 +63,8 @@ func (drawing *DrawingCandles) onRedraw() {
 	xfactor := float64(drawing.drawArea.Width) / float64(drawing.xAxisRange.Duration().Duration)
 	yfactor := float64(drawing.drawArea.Height) / yrange.Delta()
 
-	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xfactor:%f yfactor:%f style:%v", drawing.Name, drawing.drawArea, xfactor, yfactor, drawing.DrawStyle)
-	Debug(DBG_REDRAW, "%q OnRedraw serie:%v seltime:%s, yrange;%s", drawing.Name, drawing.series.String(), drawing.xAxisRange, yrange)
+	// Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xfactor:%f yfactor:%f style:%v", drawing.Name, drawing.drawArea, xfactor, yfactor, drawing.DrawStyle)
+	// Debug(DBG_REDRAW, "%q OnRedraw serie:%v seltime:%s, yrange;%s", drawing.Name, drawing.series.String(), drawing.xAxisRange, yrange)
 	//Debug(DBG_REDRAW, "%q OnRedraw xAxisRange:%v,", drawing.Name, drawing.xAxisRange.String())
 
 	// draw a vertical line for the selected data if any

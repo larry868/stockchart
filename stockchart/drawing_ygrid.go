@@ -24,7 +24,7 @@ func NewDrawingYGrid(series *DataList, fscale bool) *DrawingYGrid {
 		//	yrange := drawing.series.DataRange(drawing.xAxisRange, 10)
 		drawing.chart.yAxisRange = drawing.series.DataRange(&drawing.chart.selectedTimeSlice, 10)
 		drawing.lastyrange = drawing.chart.yAxisRange
-		Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), drawing.chart.yAxisRange)
+		// Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, datarange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), drawing.chart.yAxisRange)
 		drawing.onRedraw()
 	}
 	drawing.Drawing.NeedRedraw = func() bool {

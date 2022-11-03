@@ -42,11 +42,11 @@ func NewDrawingTimeSelector(series *DataList) *DrawingTimeSelector {
 	drawing.Drawing.OnRedraw = func() {
 		drawing.dragtimeSelection = drawing.chart.selectedTimeSlice
 		// NOTA: xAxisRange is pointing to the overall &chart.timeRange and not to the &chart.selectedTimeSlice
-		Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String())
+		// Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String())
 		drawing.onRedraw()
 	}
 	drawing.Drawing.OnMouseDown = func(xy Point, event *htmlevent.MouseEvent) {
-		Debug(DBG_EVENT, "%q OnMouseDown xy:%v, frombutton:%v, tobutton:%v", drawing.Name, xy, drawing.buttonFrom, drawing.buttonTo)
+		// Debug(DBG_EVENT, "%q OnMouseDown xy:%v, frombutton:%v, tobutton:%v", drawing.Name, xy, drawing.buttonFrom, drawing.buttonTo)
 		drawing.onMouseDown(xy, event)
 	}
 	drawing.Drawing.OnMouseUp = func(xy Point, event *htmlevent.MouseEvent) {
@@ -142,7 +142,7 @@ func (drawing *DrawingTimeSelector) onMouseUp(xy Point, event *htmlevent.MouseEv
 	// update the chart time selection
 	drawing.chart.selectedTimeSlice = drawing.dragtimeSelection
 
-	Debug(DBG_EVENT, "%q OnMouseUp xy:%v, timeselection:%v", drawing.Name, xy, drawing.dragtimeSelection)
+	// Debug(DBG_EVENT, "%q OnMouseUp xy:%v, timeselection:%v", drawing.Name, xy, drawing.dragtimeSelection)
 
 	// reset drag flag
 	drawing.dragFrom = false
@@ -229,7 +229,7 @@ func (drawing *DrawingTimeSelector) onWheel(event *htmlevent.WheelEvent) {
 
 	// define a good timestep: 20% of the current duration
 	timeStep := drawing.dragtimeSelection.Duration().Adjust(0.2).Duration
-	Debug(DBG_EVENT, "%q OnWheel, shiftKey:%v, dy:%f, timeStep:%v", drawing.Name, event.ShiftKey(), dy, timeStep)
+	// Debug(DBG_EVENT, "%q OnWheel, shiftKey:%v, dy:%f, timeStep:%v", drawing.Name, event.ShiftKey(), dy, timeStep)
 
 	if !event.ShiftKey() {
 		// shift mode, shift to the future or to the past according to dir
@@ -252,7 +252,7 @@ func (drawing *DrawingTimeSelector) onWheel(event *htmlevent.WheelEvent) {
 
 	}
 
-	Debug(DBG_EVENT, "%q OnWheel, newsel=%v", drawing.Name, drawing.dragtimeSelection)
+	// Debug(DBG_EVENT, "%q OnWheel, newsel=%v", drawing.Name, drawing.dragtimeSelection)
 
 	// update the chart selected timeslice
 	drawing.chart.selectedTimeSlice = drawing.dragtimeSelection

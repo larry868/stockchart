@@ -102,7 +102,7 @@ func (layer *Layer) SetEventDispatcher() {
 	// only if the layer contains at least one mouse function on its drawings
 	hme := layer.HandledEvents()
 
-	Debug(DBG_EVENT, "%q layer, SetEventDispatcher event handled=%08b ", layer.Name, hme)
+	// Debug(DBG_EVENT, "%q layer, SetEventDispatcher event handled=%08b ", layer.Name, hme)
 
 	if (hme & evt_MouseDown) != 0 {
 		layer.canvasE.SetOnMouseDown(func(event *htmlevent.MouseEvent, currentTarget *html.HTMLElement) {
@@ -221,7 +221,7 @@ func (layer *Layer) SetEventDispatcher() {
 					drawing.OnWheel(event)
 				}
 			}
-			Debug(DBG_SELCHANGE, "OnWheel dispatcher: last %s, new %s", oldselts.String(), layer.chart.selectedTimeSlice.String())
+			// Debug(DBG_SELCHANGE, "OnWheel dispatcher: last %s, new %s", oldselts.String(), layer.chart.selectedTimeSlice.String())
 			processSelChange()
 		})
 	}
@@ -288,7 +288,7 @@ func (layer *Layer) Resize(newarea Rect) {
 		}
 	}
 
-	Debug(DBG_RESIZE, "%q layer, Resize dpr=%f drawbuffw=%v, drawbuffh=%v", layer.Name, dpr, dbuffwidth, dbuffheight)
+	// Debug(DBG_RESIZE, "%q layer, Resize dpr=%f drawbuffw=%v, drawbuffh=%v", layer.Name, dpr, dbuffwidth, dbuffheight)
 
 	// TODO: do not redraw if the size has not changed
 	layer.Redraw()
@@ -309,7 +309,7 @@ func (layer *Layer) Redraw() {
 	for _, drawing := range layer.drawings {
 		if drawing.OnRedraw != nil {
 			if !drawing.hasNonEmptySeries() {
-				Debug(DBG_REDRAW, "%q Redraw fails: missing data", drawing.Name)
+				// Debug(DBG_REDRAW, "%q Redraw fails: missing data", drawing.Name)
 				continue
 			}
 			drawing.OnRedraw()
@@ -331,7 +331,7 @@ func (layer *Layer) RedrawOnlyNeeds() {
 			}
 			need := drawing.NeedRedraw()
 
-			Debug(DBG_SELCHANGE|DBG_REDRAW, "%q/%q layer/drawing, RedrawOnlyNeeds NeedRedraw:%v", layer.Name, drawing.Name, need)
+			// Debug(DBG_SELCHANGE|DBG_REDRAW, "%q/%q layer/drawing, RedrawOnlyNeeds NeedRedraw:%v", layer.Name, drawing.Name, need)
 
 			if need && !fredrawn {
 				layer.Redraw()

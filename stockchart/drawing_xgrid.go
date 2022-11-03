@@ -44,7 +44,7 @@ func (drawing DrawingXGrid) onRedraw() {
 	maxscans := float64(drawing.drawArea.Width) / minxstepwidth
 	maskmain := drawing.xAxisRange.GetScanMask(uint(maxscans))
 
-	Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, maskmain=%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), maskmain)
+	// Debug(DBG_REDRAW, "%q OnRedraw drawarea:%s, xAxisRange:%v, maskmain=%v", drawing.Name, drawing.drawArea, drawing.xAxisRange.String(), maskmain)
 
 	if maskmain == timeline.MASK_NONE {
 		return

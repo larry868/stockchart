@@ -104,7 +104,7 @@ func (pchart *StockChart) AddSubChart(layerid int, dr *Drawing) {
 // Returns the setup timerange and the selectedTimeslice
 func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendrate float64) (timeRange timeline.TimeSlice, selected timeline.TimeSlice) {
 
-	Debug(DBG_SELCHANGE, "SetTimeRange %s", timerange)
+	// Debug(DBG_SELCHANGE, "SetTimeRange %s", timerange)
 
 	if timerange.Duration().IsFinite && extendrate > 0 {
 		timerange.ExtendTo(timeline.Nanoseconds(float64(timerange.Duration().Duration) * extendrate).Duration)
@@ -372,7 +372,7 @@ func (pchart *StockChart) DoChangeSelTimeSlice(newts timeline.TimeSlice, fNotify
 	}
 	pchart.selectedTimeSlice = newts
 
-	Debug(DBG_SELCHANGE, "StockChart DoChangeSelTimeSlice: %s, fNotify:%v", newts.String(), fNotify)
+	// Debug(DBG_SELCHANGE, "StockChart DoChangeSelTimeSlice: %s, fNotify:%v", newts.String(), fNotify)
 
 	pchart.RedrawOnlyNeeds()
 
@@ -384,7 +384,7 @@ func (pchart *StockChart) DoChangeSelTimeSlice(newts timeline.TimeSlice, fNotify
 func (pchart *StockChart) DoChangeSelData(newdata *DataStock, fNotify bool) {
 	pchart.selectedData = newdata
 
-	Debug(DBG_SELCHANGE, "StockChart DoChangeSelData: %p %s", newdata, newdata.String())
+	// Debug(DBG_SELCHANGE, "StockChart DoChangeSelData: %p %s", newdata, newdata.String())
 
 	pchart.RedrawOnlyNeeds()
 
@@ -396,7 +396,7 @@ func (pchart *StockChart) DoChangeSelData(newdata *DataStock, fNotify bool) {
 func (pchart *StockChart) DoChangeTimeZone(localZone bool) {
 	pchart.localZone = localZone
 
-	Debug(DBG_SELCHANGE, "DoChangeTimeZone: localzone:%v", localZone)
+	// Debug(DBG_SELCHANGE, "DoChangeTimeZone: localzone:%v", localZone)
 
 	pchart.RedrawOnlyNeeds()
 }
