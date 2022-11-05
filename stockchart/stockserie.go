@@ -13,6 +13,7 @@ import (
 // DataStock is a value at a given timestamp.
 // It's linked with previous and following data
 type DataStock struct {
+	Label              string `json:"label,omitempty"`
 	timeline.TimeSlice `json:"timeslice"`
 
 	Open        float64 `json:"open"`

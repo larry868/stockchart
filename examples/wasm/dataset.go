@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -8,11 +9,11 @@ import (
 	"github.com/sunraylab/timeline/v2"
 )
 
-func BuildRandomDataset(name string, nbdata int, from time.Time, candleDuration time.Duration) *stockchart.DataList {
+func BuildRandomDataset(name string, nbdata int, from time.Time, candleDuration time.Duration, withlabel bool) *stockchart.DataList {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
-	dataset := &stockchart.DataList{Name: name, Precision:candleDuration }
+	dataset := &stockchart.DataList{Name: name, Precision: candleDuration}
 	last := from
 	open := 20000.0
 
@@ -39,6 +40,11 @@ func BuildRandomDataset(name string, nbdata int, from time.Time, candleDuration 
 		// set time
 		p.TimeSlice = timeline.MakeTimeSlice(last, candleDuration)
 
+		// set label
+		if withlabel {
+			p.Label = fmt.Sprintf("%s #%d", name, i)
+		}
+
 		// skip a data point for the sample
 		if i != 10 {
 			dataset.Append(p)
@@ -49,7 +55,11 @@ func BuildRandomDataset(name string, nbdata int, from time.Time, candleDuration 
 			p.TimeSlice.ExtendTo(candleDuration * 3.0)
 		}
 
-		last = p.TimeSlice.To
+		if withlabel {
+			last = p.TimeSlice.To.Add(-candleDuration/3*2)
+		} else {
+			last = p.TimeSlice.To
+		}
 		open = p.Close
 	}
 	return dataset

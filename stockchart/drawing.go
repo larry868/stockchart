@@ -60,10 +60,8 @@ const (
 	AlignBottom Align = 0b00001000
 )
 
-// SetMainSeries set or reset the MainSeries of the chart and its drawings. Reset the timerange.
-// Need to redraw
+// ResetSubSeries set or reset the SubSeries of the chart and its drawings.
 func (drawing *Drawing) ResetSubSeries(series *DataList, redrawNow bool) {
-	// change the content
 	drawing.series = series
 
 	if redrawNow {
