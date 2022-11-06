@@ -75,14 +75,25 @@ func (pchart *StockChart) ResetMainSeries(series DataList, extendrate float64, r
 	// change the series, referenced by all Drawings unless subchart
 	pchart.MainSeries = series
 
-	// reset time range
-	tr, sel := pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), extendrate)
+	// reset the time range, but without redrawing
+	//	tr, sel := pchart.SetTimeRange(pchart.MainSeries.TimeSlice(), extendrate)
+	trange := pchart.MainSeries.TimeSlice()
+	if trange.Duration().IsFinite && extendrate > 0 {
+		trange.ExtendTo(trange.Duration().Adjust(extendrate).Duration)
+	}
+	pchart.timeRange.From = trange.From
+	pchart.timeRange.To = trange.To
+
+	// init or adjust the SelTimeSlice according to the new timerange
+	if pchart.selectedTimeSlice.IsZero() || pchart.selectedTimeSlice.From.Before(trange.From) || pchart.selectedTimeSlice.To.After(trange.To) {
+		pchart.setSelTimeSlice(pchart.timeRange)
+	}
 
 	// Redraw, without subcharts
 	if redrawNow {
 		pchart.Resize()
 	}
-	return tr, sel
+	return trange, pchart.selectedTimeSlice
 }
 
 // AddSubChart add another drawing to draw within the same X and Y ranges than the main series on the choosen layer.
@@ -107,7 +118,8 @@ func (pchart *StockChart) SetTimeRange(timerange timeline.TimeSlice, extendrate 
 	// Debug(DBG_SELCHANGE, "SetTimeRange %s", timerange)
 
 	if timerange.Duration().IsFinite && extendrate > 0 {
-		timerange.ExtendTo(timeline.Nanoseconds(float64(timerange.Duration().Duration) * extendrate).Duration)
+		//timerange.ExtendTo(timeline.Nanoseconds(float64(timerange.Duration().Duration) * extendrate).Duration) // HACK:
+		timerange.ExtendTo(timerange.Duration().Adjust(extendrate).Duration)
 	}
 
 	pchart.timeRange.From = timerange.From
@@ -363,7 +375,19 @@ func (pchart *StockChart) RedrawOnlyNeeds() {
 //
 // call OnDoChangeTimeSelection if setup
 func (pchart *StockChart) DoChangeSelTimeSlice(newts timeline.TimeSlice, fNotify bool) {
+	// Debug(DBG_SELCHANGE, "StockChart DoChangeSelTimeSlice: %s, fNotify:%v", newts.String(), fNotify)
 
+	pchart.setSelTimeSlice(newts)
+
+	pchart.RedrawOnlyNeeds()
+
+	if pchart.NotifySelChangeTimeSlice != nil && fNotify {
+		pchart.NotifySelChangeTimeSlice(pchart.selectedTimeSlice)
+	}
+}
+
+// pchart.selectedTimeSlice is udated, not newts
+func (pchart *StockChart) setSelTimeSlice(newts timeline.TimeSlice) timeline.TimeSlice {
 	if newts.IsZero() {
 		newts = pchart.timeRange
 	} else {
@@ -371,14 +395,7 @@ func (pchart *StockChart) DoChangeSelTimeSlice(newts timeline.TimeSlice, fNotify
 		pchart.timeRange.BoundIn(&newts)
 	}
 	pchart.selectedTimeSlice = newts
-
-	// Debug(DBG_SELCHANGE, "StockChart DoChangeSelTimeSlice: %s, fNotify:%v", newts.String(), fNotify)
-
-	pchart.RedrawOnlyNeeds()
-
-	if pchart.NotifySelChangeTimeSlice != nil && fNotify {
-		pchart.NotifySelChangeTimeSlice(newts)
-	}
+	return pchart.selectedTimeSlice
 }
 
 func (pchart *StockChart) DoChangeSelData(newdata *DataStock, fNotify bool) {

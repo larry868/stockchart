@@ -76,7 +76,7 @@ func (drawing DrawingVLines) onRedraw() {
 		// candle size a pos
 		wcf64 = fmax(1.0, math.Round(xfactor*float64(item.Duration().Duration)))
 		xcf64 = drawing.xTime(item.From)
-		ycf64 = drbottomf64 +7 -10*overlap
+		ycf64 = drbottomf64 + 5 - 10*overlap
 
 		// draw now
 		drawing.Ctx2D.MoveTo(float64(int(xcf64)), float64(int(ycf64))+0.5)

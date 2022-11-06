@@ -14,7 +14,7 @@ const (
 )
 
 // Change this global variable to activate debug mode
-var DEBUG = DBG_OFF //DBG_SELCHANGE | DBG_REDRAW
+var DEBUG = DBG_REDRAW
 
 // if debug match with the DEBUG global flag, then Debug print out strprint
 func Debug(debug DebugOutput, format string, data ...any) {

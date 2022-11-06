@@ -309,9 +309,10 @@ func (layer *Layer) Redraw() {
 	for _, drawing := range layer.drawings {
 		if drawing.OnRedraw != nil {
 			if !drawing.hasNonEmptySeries() {
-				// Debug(DBG_REDRAW, "%q Redraw fails: missing data", drawing.Name)
+				Debug(DBG_REDRAW, "layer %q, %q Redraw fails: missing data", layer.Name, drawing.Name)
 				continue
 			}
+			Debug(DBG_REDRAW, "layer %q, %q calling OnRedraw", layer.Name, drawing.Name)
 			drawing.OnRedraw()
 		}
 	}
