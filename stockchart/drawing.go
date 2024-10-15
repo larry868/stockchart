@@ -8,8 +8,8 @@ import (
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/gowebapi/webapi/html/htmlevent"
-	"github.com/sunraylab/rgb/v2"
-	"github.com/sunraylab/timeline/v2"
+	"github.com/larry868/rgb"
+	timeline "github.com/larry868/timeline/v2"
 )
 
 // Drawing provides primitives

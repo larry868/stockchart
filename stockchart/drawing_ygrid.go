@@ -3,8 +3,8 @@ package stockchart
 import (
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
-	"github.com/sunraylab/datarange"
-	"github.com/sunraylab/rgb/v2"
+	"github.com/larry868/datarange"
+	"github.com/larry868/rgb"
 )
 
 type DrawingYGrid struct {

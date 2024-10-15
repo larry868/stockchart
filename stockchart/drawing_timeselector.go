@@ -7,8 +7,8 @@ import (
 	"github.com/gowebapi/webapi/css/typedom"
 	"github.com/gowebapi/webapi/html/canvas"
 	"github.com/gowebapi/webapi/html/htmlevent"
-	"github.com/sunraylab/rgb/v2/bootstrapcolor.go"
-	"github.com/sunraylab/timeline/v2"
+	bootstrapcolor "github.com/larry868/rgb/bootstrapcolor.go"
+	timeline "github.com/larry868/timeline/v2"
 )
 
 type DrawingTimeSelector struct {

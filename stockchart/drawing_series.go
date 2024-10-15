@@ -3,7 +3,7 @@ package stockchart
 import (
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
-	"github.com/sunraylab/rgb/v2/bootstrapcolor.go"
+	bootstrapcolor "github.com/larry868/rgb/bootstrapcolor.go"
 )
 
 type DrawingSeries struct {

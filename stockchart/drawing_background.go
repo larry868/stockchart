@@ -1,7 +1,7 @@
 package stockchart
 
 import (
-	"github.com/sunraylab/rgb/v2"
+	"github.com/larry868/rgb"
 )
 
 type DrawingBackground struct {
@@ -23,7 +23,7 @@ func NewDrawingBackground(series *DataList) *DrawingBackground {
 func (drawing *DrawingBackground) onRedraw() {
 	// copyright
 	drawing.Ctx2D.SetFont(`20px 'Roboto', sans-serif`)
-	drawing.DrawTextBox("@github.com/sunraylab", Point{X: drawing.ClipArea.End().X - 100, Y: drawing.ClipArea.End().Y - 100}, AlignEnd|AlignBottom, rgb.None, drawing.MainColor, 0, 0, 0)
+	drawing.DrawTextBox("@github.com/larry868", Point{X: drawing.ClipArea.End().X - 100, Y: drawing.ClipArea.End().Y - 100}, AlignEnd|AlignBottom, rgb.None, drawing.MainColor, 0, 0, 0)
 
 	// no data
 	if drawing.series.IsEmpty() {

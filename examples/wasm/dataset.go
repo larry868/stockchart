@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/sunraylab/stockchart/stockchart"
-	"github.com/sunraylab/timeline/v2"
+	"github.com/larry868/stockchart/stockchart"
+	timeline "github.com/larry868/timeline/v2"
 )
 
 func BuildRandomDataset(name string, nbdata int, from time.Time, candleDuration time.Duration, withlabel bool) *stockchart.DataList {
@@ -56,7 +56,7 @@ func BuildRandomDataset(name string, nbdata int, from time.Time, candleDuration 
 		}
 
 		if withlabel {
-			last = p.TimeSlice.To.Add(-candleDuration/3*2)
+			last = p.TimeSlice.To.Add(-candleDuration / 3 * 2)
 		} else {
 			last = p.TimeSlice.To
 		}

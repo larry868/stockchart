@@ -8,7 +8,7 @@ The chart can be embedded into any HTML pages.
 
 ![snapshot](snapshot.png)
 
-See the [example](https://github.com/sunraylab/stockchart/tree/master/examples).
+See the [example](https://github.com/larry868/stockchart/tree/master/examples).
 
 # Features
 - draw candlestick with OHLCV series
@@ -24,7 +24,7 @@ See the [example](https://github.com/sunraylab/stockchart/tree/master/examples).
 
 - drawing on any browser accepting [HTML5 canvas](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas) & Webassembly
 - only GO, no JS
-- Written in go 1.19
+- Written in go (v 1.23)
 
 ## How to use it
 
@@ -79,10 +79,17 @@ Functionnal drawings are based on the drawing stuct providing some drawing primi
 
 Some documentation available here https://tinygo.org/docs/guides/webassembly/ and here https://github.com/golang/go/wiki/WebAssembly
 
-Go provides a specific js file called `wasm_exec.js` that need to be served by your webpapp. This file is located in the ``/misc/wasm/`` subdirectory of your go root path. Usually we copy it to the folder containing all static files of your webapp, like `cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" /example/webapp` for the above example. It's important to get the version corresponding to your go environment, it's why we recomend to copy it from your GOROOT.
+Go provides a specific js file called `wasm_exec.js` that need to be served by your webpapp. This file is located in the ``/misc/wasm/`` subdirectory of your go root path. Usually we copy it to the folder containing all static files of your webapp, like `cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./examples/web/` for the above example. It's important to get the version corresponding to your go environment, it's why we recomend to copy it from your GOROOT.
+
+### Example
+
+The demo example is available here https://larry868.github.io/stockchart/
+
+More info about the example and how to rebuild it see [readme](./examples/readme.md).
 
 ## Change log
 
+- v0.8.0 alpha: upgrade to go v1.23
 - v0.7.1 alpha: bug fix and refactoring
 - v0.7.0 alpha: major change in the way selections works, now works with request out of the chart
 	- new feat candle selection is displayed on the navbar and the chart 

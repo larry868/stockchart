@@ -5,9 +5,9 @@ import (
 
 	"github.com/gowebapi/webapi/core/js"
 	"github.com/gowebapi/webapi/html/canvas"
-	"github.com/sunraylab/rgb/v2"
-	"github.com/sunraylab/rgb/v2/bootstrapcolor.go"
-	"github.com/sunraylab/timeline/v2"
+	"github.com/larry868/rgb"
+	bootstrapcolor "github.com/larry868/rgb/bootstrapcolor.go"
+	timeline "github.com/larry868/timeline/v2"
 )
 
 type DrawingVLines struct {

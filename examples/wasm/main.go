@@ -12,9 +12,9 @@ import (
 	"github.com/gowebapi/webapi/dom"
 	"github.com/gowebapi/webapi/html"
 	"github.com/gowebapi/webapi/html/htmlevent"
-	"github.com/sunraylab/rgb/v2"
-	"github.com/sunraylab/stockchart/stockchart"
-	"github.com/sunraylab/timeline/v2"
+	"github.com/larry868/rgb"
+	"github.com/larry868/stockchart/stockchart"
+	timeline "github.com/larry868/timeline/v2"
 )
 
 // the main func is required by the GOOS=js GOARCH=wasm go builder

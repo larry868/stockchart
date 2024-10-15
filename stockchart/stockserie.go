@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/sunraylab/datarange"
-	"github.com/sunraylab/rgb/v2"
-	"github.com/sunraylab/timeline/v2"
+	"github.com/larry868/datarange"
+	"github.com/larry868/rgb"
+	timeline "github.com/larry868/timeline/v2"
 )
 
 // DataStock is a value at a given timestamp.
